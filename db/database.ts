@@ -2,6 +2,15 @@ import * as SQLite from "expo-sqlite";
 
 const db = SQLite.openDatabaseSync("koinDB");
 
+export type Transaccion = {
+  id: number;
+  tipo: "gasto" | "ingreso";
+  categoria: string;
+  importe: number;
+  concepto: string | null;
+  fecha: string;
+};
+
 export function inicializarDB() {
   db.execSync(`
     CREATE TABLE IF NOT EXISTS transacciones (
@@ -33,4 +42,12 @@ export function guardarTransaccion(
     concepto,
     fecha,
   );
+}
+
+export function obtenerTransacciones(): Transaccion[] {
+  const transacciones: Transaccion[] = db.getAllSync<Transaccion>(
+    "SELECT * FROM transacciones ORDER BY fecha DESC",
+  );
+
+  return transacciones;
 }
