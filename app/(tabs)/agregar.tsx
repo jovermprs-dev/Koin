@@ -1,5 +1,15 @@
-import { guardarTransaccion } from "@/db/database";
-import { useState } from "react";
+import {
+  actualizarTransaccion,
+  guardarTransaccion,
+  obtenerTransaccionPorId,
+} from "@/db/database";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useNavigation,
+  useRouter,
+} from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -28,6 +38,11 @@ interface FormErrors {
 export default function AgregarScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const router = useRouter();
+
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  let isEditing = !!id;
+  const navigation = useNavigation();
 
   const colors = {
     text: isDark ? "#fff" : "#111",
@@ -50,6 +65,39 @@ export default function AgregarScreen() {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Si venimos con id, precargamos los datos
+  useEffect(() => {
+    if (!id) return;
+    const transaccion = obtenerTransaccionPorId(Number(id));
+    if (!transaccion) return;
+    setForm({
+      importe: transaccion.importe.toString(),
+      tipo: transaccion.tipo,
+      categoria: transaccion.categoria,
+      concepto: transaccion.concepto ?? "",
+    });
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({
+        title: isEditing ? "Editar" : "Agregar",
+      });
+
+      if (!isEditing) {
+        setForm({ importe: "", tipo: "gasto", categoria: "", concepto: "" });
+        setErrors({});
+      }
+
+      return () => {
+        router.setParams({ id: "" });
+        navigation.setOptions({
+          title: "Agregar",
+        });
+      };
+    }, [isEditing]),
+  );
 
   const update = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -76,29 +124,47 @@ export default function AgregarScreen() {
 
   const handleSubmit = () => {
     if (!validate()) return;
-    guardarTransaccion(
-      form.tipo,
-      form.categoria,
-      Number(form.importe),
-      new Date().toISOString(),
-      form.concepto == "" ? null : form.concepto,
-    );
-    Alert.alert(
-      "Guardado",
-      `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${Number(form.importe).toFixed(2)} € guardado correctamente.`,
-      [
-        {
-          text: "OK",
-          onPress: () =>
-            setForm({
-              importe: "",
-              tipo: "gasto",
-              categoria: "",
-              concepto: "",
-            }),
-        },
-      ],
-    );
+
+    const concepto = form.concepto === "" ? null : form.concepto;
+    const fecha = new Date().toISOString();
+
+    if (isEditing) {
+      actualizarTransaccion(
+        Number(id),
+        form.tipo,
+        form.categoria,
+        Number(form.importe),
+        fecha,
+        concepto,
+      );
+      Alert.alert("Actualizado", "La transacción se ha actualizado.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } else {
+      guardarTransaccion(
+        form.tipo,
+        form.categoria,
+        Number(form.importe),
+        fecha,
+        concepto,
+      );
+      Alert.alert(
+        "Guardado",
+        `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${Number(form.importe).toFixed(2)} € guardado correctamente.`,
+        [
+          {
+            text: "OK",
+            onPress: () =>
+              setForm({
+                importe: "",
+                tipo: "gasto",
+                categoria: "",
+                concepto: "",
+              }),
+          },
+        ],
+      );
+    }
   };
 
   const tipoActivo = form.tipo === "gasto" ? colors.gasto : colors.ingreso;
@@ -156,7 +222,7 @@ export default function AgregarScreen() {
                 onPress={() => update("tipo", t)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tipoEmoji]}>
+                <Text style={styles.tipoEmoji}>
                   {t === "gasto" ? "📉" : "📈"}
                 </Text>
                 <Text
@@ -232,20 +298,18 @@ export default function AgregarScreen() {
         onPress={handleSubmit}
         activeOpacity={0.85}
       >
-        <Text style={styles.submitText}>Guardar {form.tipo}</Text>
+        <Text style={styles.submitText}>
+          {isEditing ? "Actualizar" : `Guardar ${form.tipo}`}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    paddingBottom: 48,
-  },
-  fieldGroup: {
-    marginBottom: 20,
-  },
+  container: { padding: 24, paddingBottom: 48 },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 28 },
+  fieldGroup: { marginBottom: 20 },
   label: {
     fontSize: 13,
     fontWeight: "600",
@@ -259,10 +323,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  optional: {
-    fontSize: 12,
-    fontStyle: "italic",
-  },
+  optional: { fontSize: 12, fontStyle: "italic" },
   input: {
     borderWidth: 1,
     borderRadius: 10,
@@ -277,20 +338,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
   },
-  currency: {
-    fontSize: 18,
-    marginRight: 6,
-  },
+  currency: { fontSize: 18, marginRight: 6 },
   importeInput: {
     flex: 1,
     fontSize: 24,
     fontWeight: "600",
     paddingVertical: 12,
   },
-  tipoRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
+  tipoRow: { flexDirection: "row", gap: 12 },
   tipoBtn: {
     flex: 1,
     flexDirection: "row",
@@ -301,17 +356,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
   },
-  tipoEmoji: {
-    fontSize: 18,
-  },
-  tipoLabel: {
-    fontSize: 16,
-  },
-  errorText: {
-    color: "#e53e3e",
-    fontSize: 12,
-    marginTop: 4,
-  },
+  tipoEmoji: { fontSize: 18 },
+  tipoLabel: { fontSize: 16 },
+  errorText: { color: "#e53e3e", fontSize: 12, marginTop: 4 },
   submitBtn: {
     marginTop: 8,
     paddingVertical: 16,

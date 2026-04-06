@@ -3,7 +3,7 @@ import {
   obtenerTransacciones,
   Transaccion,
 } from "@/db/database";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
@@ -58,6 +58,7 @@ type FilaProps = {
   onEliminar: (id: number) => void;
   onOpen: (id: number) => void;
   registerRef: (id: number, ref: SwipeableMethods | null) => void;
+  onEditar: (id: number) => void;
 };
 
 function FilaTransaccion({
@@ -66,6 +67,7 @@ function FilaTransaccion({
   onEliminar,
   onOpen,
   registerRef,
+  onEditar,
 }: FilaProps) {
   const swipeRef = useRef<SwipeableMethods>(null);
 
@@ -96,7 +98,9 @@ function FilaTransaccion({
       overshootRight={false}
       onSwipeableWillOpen={() => onOpen(item.id)}
     >
-      <View
+      <TouchableOpacity
+        onPress={() => onEditar(item.id)}
+        activeOpacity={0.8}
         style={[
           styles.card,
           { backgroundColor: colors.card, borderColor: colors.border },
@@ -123,7 +127,7 @@ function FilaTransaccion({
         <Text style={[styles.importe, { color: c.text }]}>
           {formatImporte(item.importe, item.tipo)}
         </Text>
-      </View>
+      </TouchableOpacity>
     </ReanimatedSwipeable>
   );
 }
@@ -146,6 +150,7 @@ function useColors() {
 // ── Pantalla principal ───────────────────────────────────────────────────────
 
 export default function TransaccionesScreen() {
+  const router = useRouter();
   const colors = useColors();
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const swipeableRefs = useRef<Map<number, SwipeableMethods>>(new Map());
@@ -181,6 +186,10 @@ export default function TransaccionesScreen() {
     });
   }, []);
 
+  const handleEditar = useCallback((id: number) => {
+    router.push(`/agregar?id=${id}`);
+  }, []);
+
   const renderItem = ({ item }: { item: Transaccion }) => (
     <FilaTransaccion
       item={item}
@@ -188,6 +197,7 @@ export default function TransaccionesScreen() {
       onEliminar={handleEliminar}
       onOpen={handleOpen}
       registerRef={registerRef}
+      onEditar={handleEditar}
     />
   );
 

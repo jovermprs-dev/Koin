@@ -55,3 +55,33 @@ export function obtenerTransacciones(): Transaccion[] {
 export function eliminarTransaccion(id: number) {
   db.runSync(`DELETE FROM transacciones WHERE id = (?)`, id);
 }
+
+export function obtenerTransaccionPorId(id: number): Transaccion | null {
+  return (
+    db.getFirstSync<Transaccion>(
+      `SELECT * FROM transacciones WHERE id = ?`,
+      id,
+    ) ?? null
+  );
+}
+
+export function actualizarTransaccion(
+  id: number,
+  tipo: string,
+  categoria: string,
+  importe: number,
+  fecha: string,
+  concepto: string | null,
+) {
+  db.runSync(
+    `UPDATE transacciones
+     SET tipo = ?, categoria = ?, importe = ?, fecha = ?, concepto = ?
+     WHERE id = ?`,
+    tipo,
+    categoria,
+    importe,
+    fecha,
+    concepto,
+    id,
+  );
+}
