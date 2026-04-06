@@ -1,3 +1,4 @@
+import { guardarTransaccion } from "@/db/database";
 import { useState } from "react";
 import {
   Alert,
@@ -75,6 +76,13 @@ export default function AgregarScreen() {
 
   const handleSubmit = () => {
     if (!validate()) return;
+    guardarTransaccion(
+      form.tipo,
+      form.categoria,
+      Number(form.importe),
+      new Date().toISOString(),
+      form.concepto == "" ? null : form.concepto,
+    );
     Alert.alert(
       "Guardado",
       `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${Number(form.importe).toFixed(2)} € guardado correctamente.`,

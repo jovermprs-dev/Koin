@@ -14,3 +14,23 @@ export function inicializarDB() {
     );
   `);
 }
+
+export function guardarTransaccion(
+  tipo: string,
+  categoria: string,
+  importe: number,
+  fecha: string,
+  concepto: string | null,
+) {
+  db.runSync(
+    `
+    INSERT INTO transacciones (tipo, categoria, importe, concepto, fecha)
+    VALUES (?, ?, ?, ?, ?)
+  `,
+    tipo,
+    categoria,
+    importe,
+    concepto,
+    fecha,
+  );
+}
