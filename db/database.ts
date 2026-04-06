@@ -51,3 +51,7 @@ export function obtenerTransacciones(): Transaccion[] {
 
   return transacciones;
 }
+
+export function eliminarTransaccion(id: number) {
+  db.runSync(`DELETE FROM transacciones WHERE id = (?)`, id);
+}

@@ -1,47 +1,101 @@
-import { obtenerTransacciones, Transaccion } from "@/db/database";
+import {
+  eliminarTransaccion,
+  obtenerTransacciones,
+  Transaccion,
+} from "@/db/database";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import { FlatList, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+import ReanimatedSwipeable, {
+  SwipeableMethods,
+} from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated, {
+  interpolate,
+  SharedValue,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
-export default function TransaccionesScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+// ── Animación del botón eliminar ─────────────────────────────────────────────
 
-  const colors = {
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    border: isDark ? "#333" : "#eee",
-    gasto: { text: "#b91c1c", bg: "#fee2e2" },
-    ingreso: { text: "#15803d", bg: "#dcfce7" },
-  };
+function AccionEliminar({
+  prog,
+  onPress,
+}: {
+  prog: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(prog.value, [0, 1], [0, 1]),
+    transform: [{ translateX: interpolate(prog.value, [0, 1], [80, 0]) }],
+  }));
 
-  const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      setTransacciones(obtenerTransacciones());
-    }, []),
+  return (
+    <Animated.View style={[styles.accionWrapper, animStyle]}>
+      <TouchableOpacity
+        style={styles.accionBtn}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.accionEmoji}>🗑️</Text>
+        <Text style={styles.accionLabel}>Eliminar</Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
+}
 
-  const formatImporte = (importe: number, tipo: Transaccion["tipo"]) => {
-    const signo = tipo === "gasto" ? "-" : "+";
-    return `${signo}${importe.toFixed(2)} €`;
-  };
+// ── Fila con su propio ref ───────────────────────────────────────────────────
 
-  const formatFecha = (fecha: string) => {
-    const date = new Date(fecha);
-    return date.toLocaleDateString("es-ES", {
+type FilaProps = {
+  item: Transaccion;
+  colors: ReturnType<typeof useColors>;
+  onEliminar: (id: number) => void;
+  onOpen: (id: number) => void;
+  registerRef: (id: number, ref: SwipeableMethods | null) => void;
+};
+
+function FilaTransaccion({
+  item,
+  colors,
+  onEliminar,
+  onOpen,
+  registerRef,
+}: FilaProps) {
+  const swipeRef = useRef<SwipeableMethods>(null);
+
+  useEffect(() => {
+    registerRef(item.id, swipeRef.current);
+    return () => registerRef(item.id, null);
+  }, [item.id]);
+
+  const c = item.tipo === "gasto" ? colors.gasto : colors.ingreso;
+
+  const formatImporte = (importe: number, tipo: Transaccion["tipo"]) =>
+    `${tipo === "gasto" ? "-" : "+"}${importe.toFixed(2)} €`;
+
+  const formatFecha = (fecha: string) =>
+    new Date(fecha).toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
-  };
 
-  const renderItem = ({ item }: { item: Transaccion }) => {
-    const c = item.tipo === "gasto" ? colors.gasto : colors.ingreso;
-    return (
+  return (
+    <ReanimatedSwipeable
+      ref={swipeRef}
+      renderRightActions={(prog) => (
+        <AccionEliminar prog={prog} onPress={() => onEliminar(item.id)} />
+      )}
+      rightThreshold={60}
+      overshootRight={false}
+      onSwipeableWillOpen={() => onOpen(item.id)}
+    >
       <View
         style={[
           styles.card,
@@ -70,8 +124,72 @@ export default function TransaccionesScreen() {
           {formatImporte(item.importe, item.tipo)}
         </Text>
       </View>
-    );
+    </ReanimatedSwipeable>
+  );
+}
+
+// ── Hook de colores ──────────────────────────────────────────────────────────
+
+function useColors() {
+  const isDark = useColorScheme() === "dark";
+  return {
+    background: isDark ? "#1a1a1a" : "#f5f5f5",
+    card: isDark ? "#2a2a2a" : "#fff",
+    text: isDark ? "#fff" : "#111",
+    subtext: isDark ? "#aaa" : "#666",
+    border: isDark ? "#333" : "#eee",
+    gasto: { text: "#b91c1c", bg: "#fee2e2" },
+    ingreso: { text: "#15803d", bg: "#dcfce7" },
   };
+}
+
+// ── Pantalla principal ───────────────────────────────────────────────────────
+
+export default function TransaccionesScreen() {
+  const colors = useColors();
+  const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
+  const swipeableRefs = useRef<Map<number, SwipeableMethods>>(new Map());
+
+  const registerRef = useCallback(
+    (id: number, ref: SwipeableMethods | null) => {
+      if (ref) swipeableRefs.current.set(id, ref);
+      else swipeableRefs.current.delete(id);
+    },
+    [],
+  );
+
+  const closeAll = useCallback(() => {
+    swipeableRefs.current.forEach((ref) => ref.close());
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setTransacciones(obtenerTransacciones());
+      closeAll();
+    }, []),
+  );
+
+  const handleEliminar = useCallback((id: number) => {
+    eliminarTransaccion(id);
+    setTransacciones((prev) => prev.filter((t) => t.id !== id));
+    swipeableRefs.current.delete(id);
+  }, []);
+
+  const handleOpen = useCallback((id: number) => {
+    swipeableRefs.current.forEach((ref, refId) => {
+      if (refId !== id) ref.close();
+    });
+  }, []);
+
+  const renderItem = ({ item }: { item: Transaccion }) => (
+    <FilaTransaccion
+      item={item}
+      colors={colors}
+      onEliminar={handleEliminar}
+      onOpen={handleOpen}
+      registerRef={registerRef}
+    />
+  );
 
   const renderEmpty = () => (
     <View style={styles.empty}>
@@ -97,19 +215,9 @@ export default function TransaccionesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  list: {
-    padding: 20,
-    paddingBottom: 40,
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
+  container: { flex: 1 },
+  list: { padding: 20, paddingBottom: 40, flexGrow: 1 },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -118,11 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  cardLeft: {
-    flex: 1,
-    gap: 3,
-    marginRight: 12,
-  },
+  cardLeft: { flex: 1, gap: 3, marginRight: 12 },
   badge: {
     alignSelf: "flex-start",
     paddingHorizontal: 8,
@@ -130,26 +234,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 4,
   },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "capitalize",
+  badgeText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
+  categoria: { fontSize: 15, fontWeight: "600" },
+  concepto: { fontSize: 13 },
+  fecha: { fontSize: 12, marginTop: 2 },
+  importe: { fontSize: 17, fontWeight: "700" },
+  accionWrapper: { justifyContent: "center", marginLeft: 10 },
+  accionBtn: {
+    backgroundColor: "#ef4444",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 72,
+    height: "100%",
+    borderRadius: 12,
+    gap: 4,
   },
-  categoria: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  concepto: {
-    fontSize: 13,
-  },
-  fecha: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  importe: {
-    fontSize: 17,
-    fontWeight: "700",
-  },
+  accionEmoji: { fontSize: 20 },
+  accionLabel: { color: "#fff", fontSize: 11, fontWeight: "700" },
   empty: {
     flex: 1,
     alignItems: "center",
@@ -157,10 +258,6 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     gap: 10,
   },
-  emptyEmoji: {
-    fontSize: 48,
-  },
-  emptyText: {
-    fontSize: 16,
-  },
+  emptyEmoji: { fontSize: 48 },
+  emptyText: { fontSize: 16 },
 });
