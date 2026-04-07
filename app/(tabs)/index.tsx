@@ -1,24 +1,184 @@
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { obtenerPresupuestosExcedidos, obtenerResumenMes, PresupuestoConGasto } from "@/db/database";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 
 export default function ResumenScreen() {
   const colorScheme = useColorScheme();
-  const textColor = colorScheme === "dark" ? "#fff" : "#000";
+  const isDark = colorScheme === "dark";
+
+  const colors = {
+    background: isDark ? "#1a1a1a" : "#f5f5f5",
+    card: isDark ? "#2a2a2a" : "#fff",
+    text: isDark ? "#fff" : "#111",
+    subtext: isDark ? "#aaa" : "#666",
+    border: isDark ? "#333" : "#eee",
+    gasto: { text: "#b91c1c", bg: "#fee2e2" },
+    ingreso: { text: "#15803d", bg: "#dcfce7" },
+    saldoPositivo: "#15803d",
+    saldoNegativo: "#b91c1c",
+  };
+
+  const [ingresos, setIngresos] = useState(0);
+  const [gastos, setGastos] = useState(0);
+  const [presupuestosExcedidos, setPresupuestosExcedidos] = useState<PresupuestoConGasto[]>([]);
+  const saldo = ingresos - gastos;
+
+  useFocusEffect(
+    useCallback(() => {
+      setIngresos(obtenerResumenMes("ingreso"));
+      setGastos(obtenerResumenMes("gasto"));
+      setPresupuestosExcedidos(obtenerPresupuestosExcedidos());
+    }, []),
+  );
+
+  const formatEur = (value: number) =>
+    `${value >= 0 ? "+" : ""}${value.toFixed(2)} €`;
+
+  const now = new Date();
+  const mes = now.toLocaleDateString("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: textColor }]}>Resumen</Text>
-    </View>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={styles.container}
+    >
+      <Text style={[styles.mes, { color: colors.subtext }]}>
+        {mes.charAt(0).toUpperCase() + mes.slice(1)}
+      </Text>
+
+      {/* Saldo */}
+      <View
+        style={[
+          styles.saldoCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.saldoLabel, { color: colors.subtext }]}>
+          Saldo del mes
+        </Text>
+        <Text
+          style={[
+            styles.saldoImporte,
+            { color: saldo >= 0 ? colors.saldoPositivo : colors.saldoNegativo },
+          ]}
+        >
+          {formatEur(saldo)}
+        </Text>
+      </View>
+
+      {/* Alertas de presupuestos superados */}
+      {presupuestosExcedidos.length > 0 && (
+        <View
+          style={[
+            styles.alertasCard,
+            { backgroundColor: colors.gasto.bg, borderColor: colors.gasto.text },
+          ]}
+        >
+          <Text style={[styles.alertasTitle, { color: colors.gasto.text }]}>
+            🚨 Presupuestos superados
+          </Text>
+          {presupuestosExcedidos.map((p) => (
+            <Text
+              key={p.id}
+              style={[styles.alertaItem, { color: colors.gasto.text }]}
+            >
+              {p.categoria}: {p.gastado.toFixed(2)} / {p.limite.toFixed(2)} €
+            </Text>
+          ))}
+        </View>
+      )}
+
+      {/* Ingresos y gastos */}
+      <View style={styles.row}>
+        <View
+          style={[
+            styles.miniCard,
+            { backgroundColor: colors.ingreso.bg, flex: 1 },
+          ]}
+        >
+          <Text style={styles.miniEmoji}>📈</Text>
+          <Text style={[styles.miniLabel, { color: colors.ingreso.text }]}>
+            Ingresos
+          </Text>
+          <Text style={[styles.miniImporte, { color: colors.ingreso.text }]}>
+            +{ingresos.toFixed(2)} €
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.miniCard,
+            { backgroundColor: colors.gasto.bg, flex: 1 },
+          ]}
+        >
+          <Text style={styles.miniEmoji}>📉</Text>
+          <Text style={[styles.miniLabel, { color: colors.gasto.text }]}>
+            Gastos
+          </Text>
+          <Text style={[styles.miniImporte, { color: colors.gasto.text }]}>
+            -{gastos.toFixed(2)} €
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { padding: 24, paddingBottom: 48 },
+  mes: { fontSize: 14, marginBottom: 24 },
+  saldoCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
     alignItems: "center",
-    justifyContent: "center",
+    marginBottom: 16,
+    gap: 8,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
+  saldoLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
+  saldoImporte: { fontSize: 42, fontWeight: "800" },
+  row: { flexDirection: "row", gap: 12 },
+  alertasCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    gap: 6,
+  },
+  alertasTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  alertaItem: { fontSize: 14 },
+  miniCard: {
+    borderRadius: 14,
+    padding: 16,
+    gap: 6,
+  },
+  miniEmoji: { fontSize: 22 },
+  miniLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  miniImporte: { fontSize: 20, fontWeight: "700" },
 });
