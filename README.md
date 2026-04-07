@@ -93,8 +93,8 @@ koin/
 ## Roadmap
 
 - [x] Project setup and navigation
-- [ ] Transaction CRUD
-- [ ] Monthly summary screen
+- [x] Transaction CRUD
+- [x] Monthly summary screen
 - [ ] Budget management
 - [ ] Charts and statistics
 - [ ] Supabase auth and sync
