@@ -1,3 +1,4 @@
+import CategoryPicker from "@/components/CategoryPicker";
 import {
   actualizarTransaccion,
   guardarTransaccion,
@@ -245,25 +246,11 @@ export default function AgregarScreen() {
       {/* Categoría */}
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: colors.subtext }]}>Categoría</Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.inputBg,
-              borderColor: errors.categoria
-                ? colors.errorBorder
-                : colors.border,
-            },
-          ]}
-          placeholder="Ej: Alimentación, Nómina…"
-          placeholderTextColor={colors.subtext}
-          value={form.categoria}
-          onChangeText={(v) => update("categoria", v)}
+        <CategoryPicker
+          selected={form.categoria}
+          onSelect={(v) => update("categoria", v)}
+          error={errors.categoria}
         />
-        {errors.categoria && (
-          <Text style={styles.errorText}>{errors.categoria}</Text>
-        )}
       </View>
 
       {/* Concepto (opcional) */}
