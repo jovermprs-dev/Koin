@@ -11,6 +11,16 @@ export type Transaccion = {
   fecha: string;
 };
 
+export type Presupuesto = {
+  id: number;
+  categoria: string;
+  limite: number;
+};
+
+export type PresupuestoConGasto = Presupuesto & {
+  gastado: number;
+};
+
 export function inicializarDB() {
   db.execSync(`
     CREATE TABLE IF NOT EXISTS transacciones (
@@ -20,6 +30,12 @@ export function inicializarDB() {
       importe REAL NOT NULL,
       concepto TEXT,
       fecha TEXT NOT NULL CHECK(fecha LIKE '____-__-__T__:__:__%.%Z')
+    );
+
+    CREATE TABLE IF NOT EXISTS presupuestos (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      categoria TEXT NOT NULL UNIQUE,
+      limite    REAL NOT NULL CHECK(limite > 0)
     );
   `);
 }
@@ -84,4 +100,79 @@ export function actualizarTransaccion(
     concepto,
     id,
   );
+}
+
+export function obtenerResumenMes(tipo: string): number {
+  const result = db.getFirstSync<{ total: number }>(
+    `
+    SELECT SUM(importe) as total FROM transacciones
+    WHERE tipo = ?
+    AND fecha >= strftime('%Y-%m-01', 'now')
+  `,
+    tipo,
+  );
+
+  return result?.total ?? 0;
+}
+
+// ── Presupuestos ─────────────────────────────────────────────────────────────
+
+export function guardarPresupuesto(categoria: string, limite: number): void {
+  db.runSync(
+    `INSERT INTO presupuestos (categoria, limite) VALUES (?, ?)`,
+    categoria.trim(),
+    limite,
+  );
+}
+
+export function actualizarPresupuesto(
+  id: number,
+  categoria: string,
+  limite: number,
+): void {
+  db.runSync(
+    `UPDATE presupuestos SET categoria = ?, limite = ? WHERE id = ?`,
+    categoria.trim(),
+    limite,
+    id,
+  );
+}
+
+export function eliminarPresupuesto(id: number): void {
+  db.runSync(`DELETE FROM presupuestos WHERE id = ?`, id);
+}
+
+export function obtenerPresupuestosConGasto(): PresupuestoConGasto[] {
+  return db.getAllSync<PresupuestoConGasto>(`
+    SELECT
+      p.id,
+      p.categoria,
+      p.limite,
+      COALESCE(SUM(t.importe), 0) AS gastado
+    FROM presupuestos p
+    LEFT JOIN transacciones t
+      ON t.categoria = p.categoria
+      AND t.tipo = 'gasto'
+      AND t.fecha >= strftime('%Y-%m-01T00:00:00.000Z', 'now')
+    GROUP BY p.id
+    ORDER BY (COALESCE(SUM(t.importe), 0) / p.limite) DESC
+  `);
+}
+
+export function obtenerPresupuestosExcedidos(): PresupuestoConGasto[] {
+  return db.getAllSync<PresupuestoConGasto>(`
+    SELECT
+      p.id,
+      p.categoria,
+      p.limite,
+      COALESCE(SUM(t.importe), 0) AS gastado
+    FROM presupuestos p
+    LEFT JOIN transacciones t
+      ON t.categoria = p.categoria
+      AND t.tipo = 'gasto'
+      AND t.fecha >= strftime('%Y-%m-01T00:00:00.000Z', 'now')
+    GROUP BY p.id
+    HAVING gastado > p.limite
+    ORDER BY gastado DESC
+  `);
 }
