@@ -1,10 +1,11 @@
 import { obtenerPresupuestosExcedidos, obtenerResumenMes, PresupuestoConGasto } from "@/db/database";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
@@ -12,6 +13,7 @@ import {
 export default function ResumenScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const router = useRouter();
 
   const colors = {
     background: isDark ? "#1a1a1a" : "#f5f5f5",
@@ -98,6 +100,17 @@ export default function ResumenScreen() {
         </View>
       )}
 
+      {/* Enlace a estadísticas */}
+      <TouchableOpacity
+        onPress={() => router.push("/estadisticas")}
+        style={styles.statsLink}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.statsLinkText, { color: "#2f95dc" }]}>
+          Ver estadísticas →
+        </Text>
+      </TouchableOpacity>
+
       {/* Ingresos y gastos */}
       <View style={styles.row}>
         <View
@@ -153,6 +166,8 @@ const styles = StyleSheet.create({
   },
   saldoImporte: { fontSize: 42, fontWeight: "800" },
   row: { flexDirection: "row", gap: 12 },
+  statsLink: { alignSelf: "flex-end", marginBottom: 16 },
+  statsLinkText: { fontSize: 13, fontWeight: "600" },
   alertasCard: {
     borderRadius: 12,
     borderWidth: 1,
