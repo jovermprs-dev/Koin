@@ -176,3 +176,43 @@ export function obtenerPresupuestosExcedidos(): PresupuestoConGasto[] {
     ORDER BY gastado DESC
   `);
 }
+
+// ── Estadísticas ──────────────────────────────────────────────────────────────
+
+export type GastoCategoria = {
+  categoria: string;
+  total: number;
+};
+
+export type ResumenMes = {
+  mes: string;
+  ingresos: number;
+  gastos: number;
+};
+
+export function obtenerGastosPorCategoria(): GastoCategoria[] {
+  return db.getAllSync<GastoCategoria>(`
+    SELECT categoria, SUM(importe) AS total
+    FROM transacciones
+    WHERE tipo = 'gasto'
+      AND fecha >= strftime('%Y-%m-01T00:00:00.000Z', 'now')
+    GROUP BY categoria
+    ORDER BY total DESC
+  `);
+}
+
+export function obtenerResumenUltimosMeses(n: number): ResumenMes[] {
+  return db.getAllSync<ResumenMes>(
+    `
+    SELECT
+      strftime('%Y-%m', fecha) AS mes,
+      SUM(CASE WHEN tipo = 'ingreso' THEN importe ELSE 0 END) AS ingresos,
+      SUM(CASE WHEN tipo = 'gasto'   THEN importe ELSE 0 END) AS gastos
+    FROM transacciones
+    WHERE fecha >= date('now', '-' || ? || ' months')
+    GROUP BY mes
+    ORDER BY mes ASC
+    `,
+    n,
+  );
+}
