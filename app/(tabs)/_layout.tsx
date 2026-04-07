@@ -56,6 +56,15 @@ export default function TabLayout() {
           },
         }}
       />
+      <Tabs.Screen
+        name="presupuestos"
+        options={{
+          title: "Presupuestos",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="pie-chart" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
