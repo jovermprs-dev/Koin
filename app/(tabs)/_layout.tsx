@@ -1,10 +1,12 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs, usePathname, useRouter } from "expo-router";
 import React from "react";
+import { Alert, TouchableOpacity } from "react-native";
 
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
+import { supabase } from "@/lib/supabase";
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
@@ -30,6 +32,27 @@ export default function TabLayout() {
         options={{
           title: "Resumen",
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert("Cerrar sesión", "¿Seguro que quieres salir?", [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Salir",
+                    style: "destructive",
+                    onPress: () => supabase.auth.signOut(),
+                  },
+                ])
+              }
+              style={{ marginRight: 16 }}
+            >
+              <FontAwesome
+                name="sign-out"
+                size={20}
+                color={Colors[colorScheme ?? "light"].tint}
+              />
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen
