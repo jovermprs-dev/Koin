@@ -4,6 +4,7 @@ import {
   guardarTransaccion,
   obtenerTransaccionPorId,
 } from "@/db/database";
+import { sincronizar } from "@/lib/sync";
 import {
   useFocusEffect,
   useLocalSearchParams,
@@ -138,6 +139,7 @@ export default function AgregarScreen() {
         fecha,
         concepto,
       );
+      sincronizar().catch(console.warn);
       Alert.alert("Actualizado", "La transacción se ha actualizado.", [
         { text: "OK", onPress: () => router.back() },
       ]);
@@ -149,6 +151,7 @@ export default function AgregarScreen() {
         fecha,
         concepto,
       );
+      sincronizar().catch(console.warn);
       Alert.alert(
         "Guardado",
         `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${Number(form.importe).toFixed(2)} € guardado correctamente.`,

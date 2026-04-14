@@ -1,8 +1,10 @@
 import {
   eliminarTransaccion,
+  obtenerRemoteIdTransaccion,
   obtenerTransacciones,
   Transaccion,
 } from "@/db/database";
+import { eliminarTransaccionRemota } from "@/lib/sync";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -175,9 +177,11 @@ export default function TransaccionesScreen() {
   );
 
   const handleEliminar = useCallback((id: number) => {
+    const remoteId = obtenerRemoteIdTransaccion(id);
     eliminarTransaccion(id);
     setTransacciones((prev) => prev.filter((t) => t.id !== id));
     swipeableRefs.current.delete(id);
+    if (remoteId) eliminarTransaccionRemota(remoteId).catch(console.warn);
   }, []);
 
   const handleOpen = useCallback((id: number) => {

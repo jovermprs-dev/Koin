@@ -2,10 +2,12 @@ import CategoryPicker from "@/components/CategoryPicker";
 import {
   actualizarPresupuesto,
   eliminarPresupuesto,
-  guardarPresupuesto,
   obtenerPresupuestosConGasto,
+  obtenerRemoteIdPresupuesto,
+  guardarPresupuesto,
   PresupuestoConGasto,
 } from "@/db/database";
+import { eliminarPresupuestoRemoto, sincronizar } from "@/lib/sync";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -238,9 +240,11 @@ export default function PresupuestosScreen() {
   // ── CRUD ────────────────────────────────────────────────────────────────────
 
   const handleEliminar = useCallback((id: number) => {
+    const remoteId = obtenerRemoteIdPresupuesto(id);
     eliminarPresupuesto(id);
     setPresupuestos((prev) => prev.filter((p) => p.id !== id));
     swipeableRefs.current.delete(id);
+    if (remoteId) eliminarPresupuestoRemoto(remoteId).catch(console.warn);
   }, []);
 
   const handleEditar = useCallback(
@@ -275,6 +279,7 @@ export default function PresupuestosScreen() {
       } else {
         guardarPresupuesto(formCategoria, Number(formLimite));
       }
+      sincronizar().catch(console.warn);
       cargar();
       cerrarFormulario();
     } catch {
