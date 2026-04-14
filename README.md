@@ -30,7 +30,6 @@ Personal finance tracker built with React Native & Expo. Track your income and e
 | Language | TypeScript |
 | Local database | expo-sqlite |
 | Backend & auth | Supabase |
-| State management | Zustand |
 | Charts | Gifted Charts |
 | Animations | React Native Reanimated |
 
@@ -95,10 +94,10 @@ koin/
 - [x] Project setup and navigation
 - [x] Transaction CRUD
 - [x] Monthly summary screen
-- [ ] Budget management
-- [ ] Charts and statistics
-- [ ] Supabase auth and sync
-- [ ] Dark mode
+- [x] Budget management
+- [x] Charts and statistics
+- [x] Supabase auth and sync
+- [x] Dark mode
 - [ ] Production build
 
 ---
