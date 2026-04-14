@@ -4,25 +4,13 @@ import {
   obtenerResumenUltimosMeses,
   ResumenMes,
 } from "@/db/database";
+import { useAppColors } from "@/hooks/useAppColors";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function useColors() {
-  const isDark = useColorScheme() === "dark";
-  return {
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    border: isDark ? "#333" : "#eee",
-    ingreso: "#22c55e",
-    gasto: "#ef4444",
-  };
-}
 
 function labelMes(mes: string): string {
   const [year, month] = mes.split("-");
@@ -32,11 +20,19 @@ function labelMes(mes: string): string {
 
 // ── Componente de leyenda ─────────────────────────────────────────────────────
 
-function LeyendaItem({ color, label }: { color: string; label: string }) {
+function LeyendaItem({
+  color,
+  label,
+  textColor,
+}: {
+  color: string;
+  label: string;
+  textColor: string;
+}) {
   return (
     <View style={styles.leyendaItem}>
       <View style={[styles.leyendaDot, { backgroundColor: color }]} />
-      <Text style={styles.leyendaLabel}>{label}</Text>
+      <Text style={[styles.leyendaLabel, { color: textColor }]}>{label}</Text>
     </View>
   );
 }
@@ -44,7 +40,7 @@ function LeyendaItem({ color, label }: { color: string; label: string }) {
 // ── Pantalla principal ────────────────────────────────────────────────────────
 
 export default function EstadisticasScreen() {
-  const colors = useColors();
+  const colors = useAppColors();
   const [gastosCat, setGastosCat] = useState<GastoCategoria[]>([]);
   const [resumenMeses, setResumenMeses] = useState<ResumenMes[]>([]);
 
@@ -60,7 +56,7 @@ export default function EstadisticasScreen() {
   const dataCategoria = gastosCat.map((g) => ({
     value: g.total,
     label: g.categoria,
-    frontColor: colors.gasto,
+    frontColor: colors.gasto.active,
   }));
 
   // ── Datos para el gráfico de tendencia mensual ────────────────────────────
@@ -69,12 +65,12 @@ export default function EstadisticasScreen() {
     {
       value: m.ingresos,
       label: labelMes(m.mes),
-      frontColor: colors.ingreso,
+      frontColor: colors.ingreso.active,
       spacing: 4,
     },
     {
       value: m.gastos,
-      frontColor: colors.gasto,
+      frontColor: colors.gasto.active,
       spacing: 16,
     },
   ]);
@@ -153,8 +149,8 @@ export default function EstadisticasScreen() {
               maxValue={maxTendencia > 0 ? Math.ceil(maxTendencia * 1.2) : 100}
             />
             <View style={styles.leyenda}>
-              <LeyendaItem color={colors.ingreso} label="Ingresos" />
-              <LeyendaItem color={colors.gasto} label="Gastos" />
+              <LeyendaItem color={colors.ingreso.active} label="Ingresos" textColor={colors.subtext} />
+              <LeyendaItem color={colors.gasto.active} label="Gastos" textColor={colors.subtext} />
             </View>
           </>
         )}
@@ -190,5 +186,5 @@ const styles = StyleSheet.create({
   },
   leyendaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   leyendaDot: { width: 10, height: 10, borderRadius: 5 },
-  leyendaLabel: { fontSize: 12, color: "#666" },
+  leyendaLabel: { fontSize: 12 },
 });

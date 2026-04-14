@@ -1,3 +1,4 @@
+import { useAppColors } from "@/hooks/useAppColors";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 import {
@@ -8,28 +9,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 
 type Modo = "login" | "registro";
 
-function useColors() {
-  const isDark = useColorScheme() === "dark";
-  return {
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    border: isDark ? "#444" : "#ddd",
-    inputBg: isDark ? "#333" : "#fafafa",
-    tint: "#2f95dc",
-    error: "#e53e3e",
-  };
-}
-
 export default function LoginScreen() {
-  const colors = useColors();
+  const colors = useAppColors();
   const [modo, setModo] = useState<Modo>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -98,7 +84,7 @@ export default function LoginScreen() {
 
         {/* Selector de modo */}
         <View
-          style={[styles.modoSelector, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.modoSelector, { backgroundColor: colors.card, borderColor: colors.inputBorder }]}
         >
           {(["login", "registro"] as Modo[]).map((m) => (
             <TouchableOpacity
@@ -123,11 +109,11 @@ export default function LoginScreen() {
         </View>
 
         {/* Formulario */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.inputBorder }]}>
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.subtext }]}>Email</Text>
             <TextInput
-              style={[styles.input, { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.border }]}
+              style={[styles.input, { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}
               placeholder="tu@email.com"
               placeholderTextColor={colors.subtext}
               keyboardType="email-address"
@@ -141,7 +127,7 @@ export default function LoginScreen() {
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.subtext }]}>Contraseña</Text>
             <TextInput
-              style={[styles.input, { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.border }]}
+              style={[styles.input, { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}
               placeholder="Mínimo 6 caracteres"
               placeholderTextColor={colors.subtext}
               secureTextEntry

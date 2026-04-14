@@ -4,6 +4,7 @@ import {
   guardarTransaccion,
   obtenerTransaccionPorId,
 } from "@/db/database";
+import { useAppColors } from "@/hooks/useAppColors";
 import { sincronizar } from "@/lib/sync";
 import {
   useFocusEffect,
@@ -19,7 +20,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 
@@ -38,26 +38,12 @@ interface FormErrors {
 }
 
 export default function AgregarScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const colors = useAppColors();
   const router = useRouter();
 
   const { id } = useLocalSearchParams<{ id?: string }>();
   let isEditing = !!id;
   const navigation = useNavigation();
-
-  const colors = {
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    border: isDark ? "#444" : "#ddd",
-    inputBg: isDark ? "#333" : "#fafafa",
-    errorBorder: "#e53e3e",
-    errorText: "#e53e3e",
-    gasto: { bg: "#fee2e2", text: "#b91c1c", active: "#ef4444" },
-    ingreso: { bg: "#dcfce7", text: "#15803d", active: "#22c55e" },
-  };
 
   const [form, setForm] = useState<FormData>({
     importe: "",
@@ -68,7 +54,6 @@ export default function AgregarScreen() {
 
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Si venimos con id, precargamos los datos
   useEffect(() => {
     if (!id) return;
     const transaccion = obtenerTransaccionPorId(Number(id));
@@ -187,7 +172,7 @@ export default function AgregarScreen() {
             styles.importeWrapper,
             {
               backgroundColor: colors.inputBg,
-              borderColor: errors.importe ? colors.errorBorder : colors.border,
+              borderColor: errors.importe ? colors.error : colors.inputBorder,
             },
           ]}
         >
@@ -202,7 +187,7 @@ export default function AgregarScreen() {
           />
         </View>
         {errors.importe && (
-          <Text style={styles.errorText}>{errors.importe}</Text>
+          <Text style={[styles.errorText, { color: colors.error }]}>{errors.importe}</Text>
         )}
       </View>
 
@@ -219,7 +204,7 @@ export default function AgregarScreen() {
                 style={[
                   styles.tipoBtn,
                   {
-                    borderColor: isActive ? c.active : colors.border,
+                    borderColor: isActive ? c.active : colors.inputBorder,
                     backgroundColor: isActive ? c.bg : colors.card,
                   },
                 ]}
@@ -272,7 +257,7 @@ export default function AgregarScreen() {
             {
               color: colors.text,
               backgroundColor: colors.inputBg,
-              borderColor: colors.border,
+              borderColor: colors.inputBorder,
             },
           ]}
           placeholder="Descripción breve…"
@@ -298,7 +283,6 @@ export default function AgregarScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 24, paddingBottom: 48 },
-  title: { fontSize: 28, fontWeight: "bold", marginBottom: 28 },
   fieldGroup: { marginBottom: 20 },
   label: {
     fontSize: 13,
@@ -348,7 +332,7 @@ const styles = StyleSheet.create({
   },
   tipoEmoji: { fontSize: 18 },
   tipoLabel: { fontSize: 16 },
-  errorText: { color: "#e53e3e", fontSize: 12, marginTop: 4 },
+  errorText: { fontSize: 12, marginTop: 4 },
   submitBtn: {
     marginTop: 8,
     paddingVertical: 16,

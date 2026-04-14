@@ -1,4 +1,5 @@
 import CategoryPicker from "@/components/CategoryPicker";
+import { Progreso } from "@/constants/Colors";
 import {
   actualizarPresupuesto,
   eliminarPresupuesto,
@@ -7,6 +8,7 @@ import {
   guardarPresupuesto,
   PresupuestoConGasto,
 } from "@/db/database";
+import { useAppColors } from "@/hooks/useAppColors";
 import { eliminarPresupuestoRemoto, sincronizar } from "@/lib/sync";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,7 +19,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import ReanimatedSwipeable, {
@@ -33,23 +34,9 @@ import AnimatedRN, {
 
 function colorPresupuesto(gastado: number, limite: number) {
   const pct = limite > 0 ? gastado / limite : 0;
-  if (pct >= 1) return { bar: "#ef4444", badge: "#fee2e2", text: "#b91c1c" };
-  if (pct >= 0.75) return { bar: "#f97316", badge: "#ffedd5", text: "#c2410c" };
-  return { bar: "#22c55e", badge: "#dcfce7", text: "#15803d" };
-}
-
-function useColors() {
-  const isDark = useColorScheme() === "dark";
-  return {
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    border: isDark ? "#333" : "#eee",
-    inputBg: isDark ? "#333" : "#fafafa",
-    inputBorder: isDark ? "#444" : "#ddd",
-    tint: "#2f95dc",
-  };
+  if (pct >= 1) return Progreso.critico;
+  if (pct >= 0.75) return Progreso.advertencia;
+  return Progreso.ok;
 }
 
 // ── Botón animado de eliminar ─────────────────────────────────────────────────
@@ -84,7 +71,7 @@ function AccionEliminar({
 
 type FilaProps = {
   item: PresupuestoConGasto;
-  colors: ReturnType<typeof useColors>;
+  colors: ReturnType<typeof useAppColors>;
   onEliminar: (id: number) => void;
   onEditar: (item: PresupuestoConGasto) => void;
   onOpen: (id: number) => void;
@@ -171,7 +158,7 @@ function FilaPresupuesto({
 const FORM_HEIGHT = 260;
 
 export default function PresupuestosScreen() {
-  const colors = useColors();
+  const colors = useAppColors();
   const [presupuestos, setPresupuestos] = useState<PresupuestoConGasto[]>([]);
 
   const [formularioVisible, setFormularioVisible] = useState(false);

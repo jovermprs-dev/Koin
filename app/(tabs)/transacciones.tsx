@@ -4,6 +4,7 @@ import {
   obtenerTransacciones,
   Transaccion,
 } from "@/db/database";
+import { useAppColors } from "@/hooks/useAppColors";
 import { eliminarTransaccionRemota } from "@/lib/sync";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,7 +13,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import ReanimatedSwipeable, {
@@ -56,7 +56,7 @@ function AccionEliminar({
 
 type FilaProps = {
   item: Transaccion;
-  colors: ReturnType<typeof useColors>;
+  colors: ReturnType<typeof useAppColors>;
   onEliminar: (id: number) => void;
   onOpen: (id: number) => void;
   registerRef: (id: number, ref: SwipeableMethods | null) => void;
@@ -134,26 +134,11 @@ function FilaTransaccion({
   );
 }
 
-// ── Hook de colores ──────────────────────────────────────────────────────────
-
-function useColors() {
-  const isDark = useColorScheme() === "dark";
-  return {
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    border: isDark ? "#333" : "#eee",
-    gasto: { text: "#b91c1c", bg: "#fee2e2" },
-    ingreso: { text: "#15803d", bg: "#dcfce7" },
-  };
-}
-
 // ── Pantalla principal ───────────────────────────────────────────────────────
 
 export default function TransaccionesScreen() {
   const router = useRouter();
-  const colors = useColors();
+  const colors = useAppColors();
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const swipeableRefs = useRef<Map<number, SwipeableMethods>>(new Map());
 

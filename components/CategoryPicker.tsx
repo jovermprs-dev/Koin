@@ -1,10 +1,10 @@
 import { CATEGORIAS } from "@/constants/Categorias";
+import { useAppColors } from "@/hooks/useAppColors";
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 
@@ -15,17 +15,7 @@ type Props = {
 };
 
 export default function CategoryPicker({ selected, onSelect, error }: Props) {
-  const isDark = useColorScheme() === "dark";
-  const colors = {
-    border: isDark ? "#444" : "#ddd",
-    chipBg: isDark ? "#2a2a2a" : "#f0f0f0",
-    chipText: isDark ? "#ccc" : "#555",
-    activeBg: isDark ? "#1d4ed8" : "#dbeafe",
-    activeBorder: "#2f95dc",
-    activeText: isDark ? "#93c5fd" : "#1d4ed8",
-    errorBorder: "#e53e3e",
-    errorText: "#e53e3e",
-  };
+  const colors = useAppColors();
 
   return (
     <View>
@@ -44,12 +34,12 @@ export default function CategoryPicker({ selected, onSelect, error }: Props) {
               style={[
                 styles.chip,
                 {
-                  backgroundColor: isActive ? colors.activeBg : colors.chipBg,
+                  backgroundColor: isActive ? colors.chipActiveBg : colors.chipBg,
                   borderColor: isActive
-                    ? colors.activeBorder
+                    ? colors.tint
                     : error && !selected
-                    ? colors.errorBorder
-                    : colors.border,
+                    ? colors.error
+                    : colors.inputBorder,
                 },
               ]}
             >
@@ -57,7 +47,7 @@ export default function CategoryPicker({ selected, onSelect, error }: Props) {
               <Text
                 style={[
                   styles.chipLabel,
-                  { color: isActive ? colors.activeText : colors.chipText },
+                  { color: isActive ? colors.chipActiveText : colors.chipText },
                 ]}
               >
                 {cat.nombre}
@@ -66,7 +56,7 @@ export default function CategoryPicker({ selected, onSelect, error }: Props) {
           );
         })}
       </ScrollView>
-      {error && <Text style={[styles.errorText, { color: colors.errorText }]}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
     </View>
   );
 }

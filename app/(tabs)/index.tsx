@@ -1,4 +1,5 @@
 import { obtenerPresupuestosExcedidos, obtenerResumenMes, PresupuestoConGasto } from "@/db/database";
+import { useAppColors } from "@/hooks/useAppColors";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -6,26 +7,12 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 
 export default function ResumenScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const colors = useAppColors();
   const router = useRouter();
-
-  const colors = {
-    background: isDark ? "#1a1a1a" : "#f5f5f5",
-    card: isDark ? "#2a2a2a" : "#fff",
-    text: isDark ? "#fff" : "#111",
-    subtext: isDark ? "#aaa" : "#666",
-    border: isDark ? "#333" : "#eee",
-    gasto: { text: "#b91c1c", bg: "#fee2e2" },
-    ingreso: { text: "#15803d", bg: "#dcfce7" },
-    saldoPositivo: "#15803d",
-    saldoNegativo: "#b91c1c",
-  };
 
   const [ingresos, setIngresos] = useState(0);
   const [gastos, setGastos] = useState(0);
@@ -71,7 +58,7 @@ export default function ResumenScreen() {
         <Text
           style={[
             styles.saldoImporte,
-            { color: saldo >= 0 ? colors.saldoPositivo : colors.saldoNegativo },
+            { color: saldo >= 0 ? colors.ingreso.text : colors.gasto.text },
           ]}
         >
           {formatEur(saldo)}
@@ -106,7 +93,7 @@ export default function ResumenScreen() {
         style={styles.statsLink}
         activeOpacity={0.7}
       >
-        <Text style={[styles.statsLinkText, { color: "#2f95dc" }]}>
+        <Text style={[styles.statsLinkText, { color: colors.tint }]}>
           Ver estadísticas →
         </Text>
       </TouchableOpacity>
