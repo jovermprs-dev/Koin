@@ -91,7 +91,7 @@ export function actualizarTransaccion(
 ) {
   db.runSync(
     `UPDATE transacciones
-     SET tipo = ?, categoria = ?, importe = ?, fecha = ?, concepto = ?
+     SET tipo = ?, categoria = ?, importe = ?, fecha = ?, concepto = ?, synced = 0
      WHERE id = ?`,
     tipo,
     categoria,
@@ -131,7 +131,7 @@ export function actualizarPresupuesto(
   limite: number,
 ): void {
   db.runSync(
-    `UPDATE presupuestos SET categoria = ?, limite = ? WHERE id = ?`,
+    `UPDATE presupuestos SET categoria = ?, limite = ?, synced = 0 WHERE id = ?`,
     categoria.trim(),
     limite,
     id,
@@ -175,6 +175,139 @@ export function obtenerPresupuestosExcedidos(): PresupuestoConGasto[] {
     HAVING gastado > p.limite
     ORDER BY gastado DESC
   `);
+}
+
+// ── Migración ─────────────────────────────────────────────────────────────────
+
+type TransaccionLocal = Transaccion & { remote_id: string | null; synced: number };
+type PresupuestoLocal = Presupuesto & { remote_id: string | null; synced: number };
+
+export function migrarDB(): void {
+  const cols = (tabla: string) =>
+    db
+      .getAllSync<{ name: string }>(`PRAGMA table_info(${tabla})`)
+      .map((c) => c.name);
+
+  if (!cols("transacciones").includes("remote_id")) {
+    db.runSync(`ALTER TABLE transacciones ADD COLUMN remote_id TEXT`);
+    db.runSync(
+      `ALTER TABLE transacciones ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+    );
+  }
+  if (!cols("presupuestos").includes("remote_id")) {
+    db.runSync(`ALTER TABLE presupuestos ADD COLUMN remote_id TEXT`);
+    db.runSync(
+      `ALTER TABLE presupuestos ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+    );
+  }
+}
+
+// ── Sync — transacciones ──────────────────────────────────────────────────────
+
+export function obtenerTransaccionesNoSincronizadas(): TransaccionLocal[] {
+  return db.getAllSync<TransaccionLocal>(
+    `SELECT * FROM transacciones WHERE synced = 0`,
+  );
+}
+
+export function marcarTransaccionSincronizada(
+  id: number,
+  remoteId: string,
+): void {
+  db.runSync(
+    `UPDATE transacciones SET remote_id = ?, synced = 1 WHERE id = ?`,
+    remoteId,
+    id,
+  );
+}
+
+export function obtenerRemoteIdTransaccion(id: number): string | null {
+  const row = db.getFirstSync<{ remote_id: string | null }>(
+    `SELECT remote_id FROM transacciones WHERE id = ?`,
+    id,
+  );
+  return row?.remote_id ?? null;
+}
+
+export function insertarTransaccionRemota(t: {
+  remote_id: string;
+  tipo: string;
+  categoria: string;
+  importe: number;
+  concepto: string | null;
+  fecha: string;
+}): void {
+  db.runSync(
+    `INSERT INTO transacciones (tipo, categoria, importe, concepto, fecha, remote_id, synced)
+     VALUES (?, ?, ?, ?, ?, ?, 1)`,
+    t.tipo,
+    t.categoria,
+    t.importe,
+    t.concepto,
+    t.fecha,
+    t.remote_id,
+  );
+}
+
+// ── Sync — presupuestos ───────────────────────────────────────────────────────
+
+export function obtenerPresupuestosNoSincronizados(): PresupuestoLocal[] {
+  return db.getAllSync<PresupuestoLocal>(
+    `SELECT * FROM presupuestos WHERE synced = 0`,
+  );
+}
+
+export function marcarPresupuestoSincronizado(
+  id: number,
+  remoteId: string,
+): void {
+  db.runSync(
+    `UPDATE presupuestos SET remote_id = ?, synced = 1 WHERE id = ?`,
+    remoteId,
+    id,
+  );
+}
+
+export function obtenerRemoteIdPresupuesto(id: number): string | null {
+  const row = db.getFirstSync<{ remote_id: string | null }>(
+    `SELECT remote_id FROM presupuestos WHERE id = ?`,
+    id,
+  );
+  return row?.remote_id ?? null;
+}
+
+export function insertarPresupuestoRemoto(p: {
+  remote_id: string;
+  categoria: string;
+  limite: number;
+}): void {
+  db.runSync(
+    `INSERT INTO presupuestos (categoria, limite, remote_id, synced)
+     VALUES (?, ?, ?, 1)`,
+    p.categoria,
+    p.limite,
+    p.remote_id,
+  );
+}
+
+export function obtenerRemoteIdsTransacciones(): string[] {
+  return db
+    .getAllSync<{ remote_id: string }>(
+      `SELECT remote_id FROM transacciones WHERE remote_id IS NOT NULL`,
+    )
+    .map((r) => r.remote_id);
+}
+
+export function obtenerRemoteIdsPresupuestos(): string[] {
+  return db
+    .getAllSync<{ remote_id: string }>(
+      `SELECT remote_id FROM presupuestos WHERE remote_id IS NOT NULL`,
+    )
+    .map((r) => r.remote_id);
+}
+
+export function limpiarDatosLocales(): void {
+  db.execSync(`DELETE FROM transacciones; DELETE FROM presupuestos;`);
 }
 
 // ── Estadísticas ──────────────────────────────────────────────────────────────
