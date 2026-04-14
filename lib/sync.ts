@@ -91,7 +91,7 @@ async function pullTransacciones(): Promise<void> {
     if (!locales.includes(remota.id)) {
       insertarTransaccionRemota({
         remote_id: remota.id,
-        tipo: remota.tipo,
+        tipo: remota.tipo as "gasto" | "ingreso",
         categoria: remota.categoria,
         importe: remota.importe,
         concepto: remota.concepto,

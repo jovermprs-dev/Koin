@@ -1,25 +1,9 @@
 import * as SQLite from "expo-sqlite";
+import type { GastoCategoria, Presupuesto, PresupuestoConGasto, ResumenMes, Transaccion, TipoTransaccion } from "@/types/models";
+
+export type { GastoCategoria, Presupuesto, PresupuestoConGasto, ResumenMes, Transaccion, TipoTransaccion };
 
 const db = SQLite.openDatabaseSync("koinDB");
-
-export type Transaccion = {
-  id: number;
-  tipo: "gasto" | "ingreso";
-  categoria: string;
-  importe: number;
-  concepto: string | null;
-  fecha: string;
-};
-
-export type Presupuesto = {
-  id: number;
-  categoria: string;
-  limite: number;
-};
-
-export type PresupuestoConGasto = Presupuesto & {
-  gastado: number;
-};
 
 export function inicializarDB() {
   db.execSync(`
@@ -41,7 +25,7 @@ export function inicializarDB() {
 }
 
 export function guardarTransaccion(
-  tipo: string,
+  tipo: TipoTransaccion,
   categoria: string,
   importe: number,
   fecha: string,
@@ -83,7 +67,7 @@ export function obtenerTransaccionPorId(id: number): Transaccion | null {
 
 export function actualizarTransaccion(
   id: number,
-  tipo: string,
+  tipo: TipoTransaccion,
   categoria: string,
   importe: number,
   fecha: string,
@@ -102,7 +86,7 @@ export function actualizarTransaccion(
   );
 }
 
-export function obtenerResumenMes(tipo: string): number {
+export function obtenerResumenMes(tipo: TipoTransaccion): number {
   const result = db.getFirstSync<{ total: number }>(
     `
     SELECT SUM(importe) as total FROM transacciones
@@ -231,7 +215,7 @@ export function obtenerRemoteIdTransaccion(id: number): string | null {
 
 export function insertarTransaccionRemota(t: {
   remote_id: string;
-  tipo: string;
+  tipo: TipoTransaccion;
   categoria: string;
   importe: number;
   concepto: string | null;
@@ -311,17 +295,6 @@ export function limpiarDatosLocales(): void {
 }
 
 // ── Estadísticas ──────────────────────────────────────────────────────────────
-
-export type GastoCategoria = {
-  categoria: string;
-  total: number;
-};
-
-export type ResumenMes = {
-  mes: string;
-  ingresos: number;
-  gastos: number;
-};
 
 export function obtenerGastosPorCategoria(): GastoCategoria[] {
   return db.getAllSync<GastoCategoria>(`
