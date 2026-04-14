@@ -5,7 +5,9 @@ import {
   obtenerTransaccionPorId,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
+import { parseImporte } from "@/lib/format";
 import { sincronizar } from "@/lib/sync";
+import type { AgregarForm, AgregarFormErrors } from "@/types/ui";
 import {
   useFocusEffect,
   useLocalSearchParams,
@@ -23,20 +25,6 @@ import {
   View,
 } from "react-native";
 
-type Tipo = "gasto" | "ingreso";
-
-interface FormData {
-  importe: string;
-  tipo: Tipo;
-  categoria: string;
-  concepto: string;
-}
-
-interface FormErrors {
-  importe?: string;
-  categoria?: string;
-}
-
 export default function AgregarScreen() {
   const colors = useAppColors();
   const router = useRouter();
@@ -45,14 +33,14 @@ export default function AgregarScreen() {
   let isEditing = !!id;
   const navigation = useNavigation();
 
-  const [form, setForm] = useState<FormData>({
+  const [form, setForm] = useState<AgregarForm>({
     importe: "",
     tipo: "gasto",
     categoria: "",
     concepto: "",
   });
 
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<AgregarFormErrors>({});
 
   useEffect(() => {
     if (!id) return;
@@ -86,7 +74,10 @@ export default function AgregarScreen() {
     }, [isEditing]),
   );
 
-  const update = <K extends keyof FormData>(field: K, value: FormData[K]) => {
+  const update = <K extends keyof AgregarForm>(
+    field: K,
+    value: AgregarForm[K],
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (field in errors) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -94,11 +85,11 @@ export default function AgregarScreen() {
   };
 
   const validate = (): boolean => {
-    const newErrors: FormErrors = {};
+    const newErrors: AgregarFormErrors = {};
     if (
       !form.importe ||
-      isNaN(Number(form.importe)) ||
-      Number(form.importe) <= 0
+      isNaN(parseImporte(form.importe)) ||
+      parseImporte(form.importe) <= 0
     ) {
       newErrors.importe = "Introduce un importe válido mayor que 0";
     }
@@ -120,7 +111,7 @@ export default function AgregarScreen() {
         Number(id),
         form.tipo,
         form.categoria,
-        Number(form.importe),
+        parseImporte(form.importe),
         fecha,
         concepto,
       );
@@ -132,31 +123,21 @@ export default function AgregarScreen() {
       guardarTransaccion(
         form.tipo,
         form.categoria,
-        Number(form.importe),
+        parseImporte(form.importe),
         fecha,
         concepto,
       );
       sincronizar().catch(console.warn);
       Alert.alert(
         "Guardado",
-        `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${Number(form.importe).toFixed(2)} € guardado correctamente.`,
-        [
-          {
-            text: "OK",
-            onPress: () =>
-              setForm({
-                importe: "",
-                tipo: "gasto",
-                categoria: "",
-                concepto: "",
-              }),
-          },
-        ],
+        `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${parseImporte(form.importe).toFixed(2)} € guardado correctamente.`,
+        [{ text: "OK", onPress: () => router.replace("/(tabs)") }],
       );
     }
   };
 
-  const tipoActivo = form.tipo === "gasto" ? colors.gasto : colors.ingreso;
+  const tipoActivo: typeof colors.gasto =
+    form.tipo === "gasto" ? colors.gasto : colors.ingreso;
 
   return (
     <ScrollView
@@ -179,7 +160,7 @@ export default function AgregarScreen() {
           <Text style={[styles.currency, { color: colors.subtext }]}>€</Text>
           <TextInput
             style={[styles.importeInput, { color: colors.text }]}
-            placeholder="0.00"
+            placeholder="0,00"
             placeholderTextColor={colors.subtext}
             keyboardType="decimal-pad"
             value={form.importe}
@@ -187,7 +168,9 @@ export default function AgregarScreen() {
           />
         </View>
         {errors.importe && (
-          <Text style={[styles.errorText, { color: colors.error }]}>{errors.importe}</Text>
+          <Text style={[styles.errorText, { color: colors.error }]}>
+            {errors.importe}
+          </Text>
         )}
       </View>
 
@@ -195,7 +178,7 @@ export default function AgregarScreen() {
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: colors.subtext }]}>Tipo</Text>
         <View style={styles.tipoRow}>
-          {(["gasto", "ingreso"] as Tipo[]).map((t) => {
+          {(["gasto", "ingreso"] as AgregarForm["tipo"][]).map((t) => {
             const isActive = form.tipo === t;
             const c = t === "gasto" ? colors.gasto : colors.ingreso;
             return (

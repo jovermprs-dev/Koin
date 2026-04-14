@@ -1,14 +1,16 @@
 import CategoryPicker from "@/components/CategoryPicker";
 import { Progreso } from "@/constants/Colors";
+import { formatCurrency, formatNumber, parseImporte } from "@/lib/format";
 import {
   actualizarPresupuesto,
   eliminarPresupuesto,
   obtenerPresupuestosConGasto,
   obtenerRemoteIdPresupuesto,
   guardarPresupuesto,
-  PresupuestoConGasto,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
+import type { PresupuestoConGasto } from "@/types/models";
+import type { FilaPresupuestoProps } from "@/types/ui";
 import { eliminarPresupuestoRemoto, sincronizar } from "@/lib/sync";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -69,15 +71,6 @@ function AccionEliminar({
 
 // ── Fila de presupuesto ───────────────────────────────────────────────────────
 
-type FilaProps = {
-  item: PresupuestoConGasto;
-  colors: ReturnType<typeof useAppColors>;
-  onEliminar: (id: number) => void;
-  onEditar: (item: PresupuestoConGasto) => void;
-  onOpen: (id: number) => void;
-  registerRef: (id: number, ref: SwipeableMethods | null) => void;
-};
-
 function FilaPresupuesto({
   item,
   colors,
@@ -85,7 +78,7 @@ function FilaPresupuesto({
   onEditar,
   onOpen,
   registerRef,
-}: FilaProps) {
+}: FilaPresupuestoProps) {
   const swipeRef = useRef<SwipeableMethods>(null);
   const pct = item.limite > 0 ? item.gastado / item.limite : 0;
   const c = colorPresupuesto(item.gastado, item.limite);
@@ -118,7 +111,7 @@ function FilaPresupuesto({
             {item.categoria}
           </Text>
           <Text style={[styles.importes, { color: colors.subtext }]}>
-            {item.gastado.toFixed(2)} / {item.limite.toFixed(2)} €
+            {formatNumber(item.gastado)} / {formatCurrency(item.limite)}
           </Text>
         </View>
 
@@ -250,7 +243,7 @@ export default function PresupuestosScreen() {
     if (!formCategoria.trim()) {
       newErrors.categoria = "La categoría es obligatoria";
     }
-    if (!formLimite || isNaN(Number(formLimite)) || Number(formLimite) <= 0) {
+    if (!formLimite || isNaN(parseImporte(formLimite)) || parseImporte(formLimite) <= 0) {
       newErrors.limite = "Introduce un límite válido mayor que 0";
     }
     setErrors(newErrors);
@@ -262,9 +255,9 @@ export default function PresupuestosScreen() {
 
     try {
       if (editandoId !== null) {
-        actualizarPresupuesto(editandoId, formCategoria, Number(formLimite));
+        actualizarPresupuesto(editandoId, formCategoria, parseImporte(formLimite));
       } else {
-        guardarPresupuesto(formCategoria, Number(formLimite));
+        guardarPresupuesto(formCategoria, parseImporte(formLimite));
       }
       sincronizar().catch(console.warn);
       cargar();

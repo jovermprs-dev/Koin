@@ -1,9 +1,8 @@
 import {
-  GastoCategoria,
   obtenerGastosPorCategoria,
   obtenerResumenUltimosMeses,
-  ResumenMes,
 } from "@/db/database";
+import type { GastoCategoria, ResumenMes } from "@/types/models";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";

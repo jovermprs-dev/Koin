@@ -1,5 +1,6 @@
 import { useAppColors } from "@/hooks/useAppColors";
 import { supabase } from "@/lib/supabase";
+import type { AuthAuthModo } from "@/types/ui";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,11 +13,9 @@ import {
   View,
 } from "react-native";
 
-type Modo = "login" | "registro";
-
 export default function LoginScreen() {
   const colors = useAppColors();
-  const [modo, setModo] = useState<Modo>("login");
+  const [modo, setAuthModo] = useState<AuthModo>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -65,8 +64,8 @@ export default function LoginScreen() {
     // Si login sin error, onAuthStateChange en _layout.tsx detecta la sesión y redirige
   };
 
-  const cambiarModo = (nuevoModo: Modo) => {
-    setModo(nuevoModo);
+  const cambiarAuthModo = (nuevoAuthModo: AuthModo) => {
+    setAuthModo(nuevoAuthModo);
     setError(null);
   };
 
@@ -86,14 +85,14 @@ export default function LoginScreen() {
         <View
           style={[styles.modoSelector, { backgroundColor: colors.card, borderColor: colors.inputBorder }]}
         >
-          {(["login", "registro"] as Modo[]).map((m) => (
+          {(["login", "registro"] as AuthModo[]).map((m) => (
             <TouchableOpacity
               key={m}
               style={[
                 styles.modoBtn,
                 modo === m && { backgroundColor: colors.tint },
               ]}
-              onPress={() => cambiarModo(m)}
+              onPress={() => cambiarAuthModo(m)}
               activeOpacity={0.8}
             >
               <Text

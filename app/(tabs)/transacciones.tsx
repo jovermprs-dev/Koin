@@ -2,11 +2,13 @@ import {
   eliminarTransaccion,
   obtenerRemoteIdTransaccion,
   obtenerTransacciones,
-  Transaccion,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
+import { formatImporte } from "@/lib/format";
 import { eliminarTransaccionRemota } from "@/lib/sync";
-import { useFocusEffect, useRouter } from "expo-router";
+import type { Transaccion } from "@/types/models";
+import type { FilaTransaccionProps } from "@/types/ui";
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
@@ -54,15 +56,6 @@ function AccionEliminar({
 
 // ── Fila con su propio ref ───────────────────────────────────────────────────
 
-type FilaProps = {
-  item: Transaccion;
-  colors: ReturnType<typeof useAppColors>;
-  onEliminar: (id: number) => void;
-  onOpen: (id: number) => void;
-  registerRef: (id: number, ref: SwipeableMethods | null) => void;
-  onEditar: (id: number) => void;
-};
-
 function FilaTransaccion({
   item,
   colors,
@@ -70,7 +63,7 @@ function FilaTransaccion({
   onOpen,
   registerRef,
   onEditar,
-}: FilaProps) {
+}: FilaTransaccionProps) {
   const swipeRef = useRef<SwipeableMethods>(null);
 
   useEffect(() => {
@@ -79,9 +72,6 @@ function FilaTransaccion({
   }, [item.id]);
 
   const c = item.tipo === "gasto" ? colors.gasto : colors.ingreso;
-
-  const formatImporte = (importe: number, tipo: Transaccion["tipo"]) =>
-    `${tipo === "gasto" ? "-" : "+"}${importe.toFixed(2)} €`;
 
   const formatFecha = (fecha: string) =>
     new Date(fecha).toLocaleDateString("es-ES", {
@@ -138,7 +128,9 @@ function FilaTransaccion({
 
 export default function TransaccionesScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const colors = useAppColors();
+  const { tipo: tipoParam } = useLocalSearchParams<{ tipo?: "gasto" | "ingreso" }>();
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const swipeableRefs = useRef<Map<number, SwipeableMethods>>(new Map());
 
@@ -156,9 +148,17 @@ export default function TransaccionesScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      navigation.setOptions({
+        title: tipoParam === "gasto" ? "Gastos" : tipoParam === "ingreso" ? "Ingresos" : "Transacciones",
+      });
       setTransacciones(obtenerTransacciones());
       closeAll();
-    }, []),
+
+      return () => {
+        router.setParams({ tipo: undefined });
+        navigation.setOptions({ title: "Transacciones" });
+      };
+    }, [tipoParam]),
   );
 
   const handleEliminar = useCallback((id: number) => {
@@ -178,6 +178,10 @@ export default function TransaccionesScreen() {
   const handleEditar = useCallback((id: number) => {
     router.push(`/agregar?id=${id}`);
   }, []);
+
+  const transaccionesFiltradas = tipoParam
+    ? transacciones.filter((t) => t.tipo === tipoParam)
+    : transacciones;
 
   const renderItem = ({ item }: { item: Transaccion }) => (
     <FilaTransaccion
@@ -202,7 +206,7 @@ export default function TransaccionesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
-        data={transacciones}
+        data={transaccionesFiltradas}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         ListEmptyComponent={renderEmpty}

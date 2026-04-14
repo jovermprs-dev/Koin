@@ -1,5 +1,7 @@
-import { obtenerPresupuestosExcedidos, obtenerResumenMes, PresupuestoConGasto } from "@/db/database";
+import { obtenerPresupuestosExcedidos, obtenerResumenMes } from "@/db/database";
+import type { PresupuestoConGasto } from "@/types/models";
 import { useAppColors } from "@/hooks/useAppColors";
+import { formatCurrency, formatSaldo } from "@/lib/format";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -26,9 +28,6 @@ export default function ResumenScreen() {
       setPresupuestosExcedidos(obtenerPresupuestosExcedidos());
     }, []),
   );
-
-  const formatEur = (value: number) =>
-    `${value >= 0 ? "+" : ""}${value.toFixed(2)} €`;
 
   const now = new Date();
   const mes = now.toLocaleDateString("es-ES", {
@@ -61,7 +60,7 @@ export default function ResumenScreen() {
             { color: saldo >= 0 ? colors.ingreso.text : colors.gasto.text },
           ]}
         >
-          {formatEur(saldo)}
+          {formatSaldo(saldo)}
         </Text>
       </View>
 
@@ -81,7 +80,7 @@ export default function ResumenScreen() {
               key={p.id}
               style={[styles.alertaItem, { color: colors.gasto.text }]}
             >
-              {p.categoria}: {p.gastado.toFixed(2)} / {p.limite.toFixed(2)} €
+              {p.categoria}: {formatCurrency(p.gastado)} / {formatCurrency(p.limite)}
             </Text>
           ))}
         </View>
@@ -100,35 +99,33 @@ export default function ResumenScreen() {
 
       {/* Ingresos y gastos */}
       <View style={styles.row}>
-        <View
-          style={[
-            styles.miniCard,
-            { backgroundColor: colors.ingreso.bg, flex: 1 },
-          ]}
+        <TouchableOpacity
+          style={[styles.miniCard, { backgroundColor: colors.ingreso.bg, flex: 1 }]}
+          onPress={() => router.push({ pathname: "/(tabs)/transacciones", params: { tipo: "ingreso" } })}
+          activeOpacity={0.8}
         >
           <Text style={styles.miniEmoji}>📈</Text>
           <Text style={[styles.miniLabel, { color: colors.ingreso.text }]}>
             Ingresos
           </Text>
           <Text style={[styles.miniImporte, { color: colors.ingreso.text }]}>
-            +{ingresos.toFixed(2)} €
+            +{formatCurrency(ingresos)}
           </Text>
-        </View>
+        </TouchableOpacity>
 
-        <View
-          style={[
-            styles.miniCard,
-            { backgroundColor: colors.gasto.bg, flex: 1 },
-          ]}
+        <TouchableOpacity
+          style={[styles.miniCard, { backgroundColor: colors.gasto.bg, flex: 1 }]}
+          onPress={() => router.push({ pathname: "/(tabs)/transacciones", params: { tipo: "gasto" } })}
+          activeOpacity={0.8}
         >
           <Text style={styles.miniEmoji}>📉</Text>
           <Text style={[styles.miniLabel, { color: colors.gasto.text }]}>
             Gastos
           </Text>
           <Text style={[styles.miniImporte, { color: colors.gasto.text }]}>
-            -{gastos.toFixed(2)} €
+            -{formatCurrency(gastos)}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
