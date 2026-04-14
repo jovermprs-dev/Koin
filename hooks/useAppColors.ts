@@ -1,6 +1,8 @@
 import { Error as ErrorColor, Gasto, Ingreso, Tint } from "@/constants/Colors";
 import { useColorScheme } from "react-native";
 
+export type AppColors = ReturnType<typeof useAppColors>;
+
 export function useAppColors() {
   const isDark = useColorScheme() === "dark";
   return {
