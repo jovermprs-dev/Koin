@@ -93,12 +93,12 @@ koin/
 ## Roadmap
 
 - [x] Project setup and navigation
-- [ ] Transaction CRUD
-- [ ] Monthly summary screen
-- [ ] Budget management
-- [ ] Charts and statistics
-- [ ] Supabase auth and sync
-- [ ] Dark mode
+- [x] Transaction CRUD
+- [x] Monthly summary screen
+- [x] Budget management
+- [x] Charts and statistics
+- [x] Supabase auth and sync
+- [x] Dark mode
 - [ ] Production build
 
 ---
