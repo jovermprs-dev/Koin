@@ -148,3 +148,8 @@ export async function sincronizar(): Promise<void> {
   await Promise.all([pushTransacciones(userId), pushPresupuestos(userId)]);
   await Promise.all([pullTransacciones(), pullPresupuestos()]);
 }
+
+// No-op on native — sync.web.ts's version resets its "already loaded"
+// guard on sign-out. Exists here too so app/_layout.tsx (shared across
+// platforms) can call it unconditionally.
+export function resetSincronizacion(): void {}

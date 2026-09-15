@@ -15,7 +15,7 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/components/useColorScheme";
 import { inicializarDB, limpiarDatosLocales, migrarDB } from "@/db/database";
 import { supabase } from "@/lib/supabase";
-import { sincronizar } from "@/lib/sync";
+import { resetSincronizacion, sincronizar } from "@/lib/sync";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export { ErrorBoundary } from "expo-router";
@@ -79,6 +79,7 @@ function RootLayoutNav() {
       }
       if (event === "SIGNED_OUT") {
         limpiarDatosLocales();
+        resetSincronizacion();
       }
     });
 
