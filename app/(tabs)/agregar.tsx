@@ -6,6 +6,7 @@ import {
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
 import { parseImporte } from "@/lib/format";
+import { alertOk } from "@/lib/platformAlert";
 import { sincronizar } from "@/lib/sync";
 import type { AgregarForm, AgregarFormErrors } from "@/types/ui";
 import {
@@ -16,7 +17,6 @@ import {
 } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,7 +39,7 @@ export default function AgregarScreen() {
     categoria: "",
     concepto: "",
   });
-
+  const [fechaOriginal, setFechaOriginal] = useState<string | null>(null);
   const [errors, setErrors] = useState<AgregarFormErrors>({});
 
   useEffect(() => {
@@ -52,6 +52,7 @@ export default function AgregarScreen() {
       categoria: transaccion.categoria,
       concepto: transaccion.concepto ?? "",
     });
+    setFechaOriginal(transaccion.fecha);
   }, [id]);
 
   useFocusEffect(
@@ -62,6 +63,7 @@ export default function AgregarScreen() {
 
       if (!isEditing) {
         setForm({ importe: "", tipo: "gasto", categoria: "", concepto: "" });
+        setFechaOriginal(null);
         setErrors({});
       }
 
@@ -104,7 +106,6 @@ export default function AgregarScreen() {
     if (!validate()) return;
 
     const concepto = form.concepto === "" ? null : form.concepto;
-    const fecha = new Date().toISOString();
 
     if (isEditing) {
       actualizarTransaccion(
@@ -112,26 +113,24 @@ export default function AgregarScreen() {
         form.tipo,
         form.categoria,
         parseImporte(form.importe),
-        fecha,
+        fechaOriginal ?? new Date().toISOString(),
         concepto,
       );
       sincronizar().catch(console.warn);
-      Alert.alert("Actualizado", "La transacción se ha actualizado.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      alertOk("Actualizado", "La transacción se ha actualizado.", () => router.back());
     } else {
       guardarTransaccion(
         form.tipo,
         form.categoria,
         parseImporte(form.importe),
-        fecha,
+        new Date().toISOString(),
         concepto,
       );
       sincronizar().catch(console.warn);
-      Alert.alert(
+      alertOk(
         "Guardado",
         `${form.tipo === "gasto" ? "Gasto" : "Ingreso"} de ${parseImporte(form.importe).toFixed(2)} € guardado correctamente.`,
-        [{ text: "OK", onPress: () => router.replace("/(tabs)") }],
+        () => router.replace("/(tabs)"),
       );
     }
   };
