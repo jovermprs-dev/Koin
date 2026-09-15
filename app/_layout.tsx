@@ -59,8 +59,9 @@ function RootLayoutNav() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      if (session) await sincronizar().catch(console.warn);
       setLoadingAuth(false);
     });
 
@@ -69,7 +70,12 @@ function RootLayoutNav() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (event === "SIGNED_IN") {
-        sincronizar().catch(console.warn);
+        // Gate the redirect to (tabs) on the sync finishing, so screens
+        // don't render with an empty cache right after login.
+        setLoadingAuth(true);
+        sincronizar()
+          .catch(console.warn)
+          .finally(() => setLoadingAuth(false));
       }
       if (event === "SIGNED_OUT") {
         limpiarDatosLocales();
