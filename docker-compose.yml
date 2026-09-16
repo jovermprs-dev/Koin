@@ -7,6 +7,13 @@ services:
         EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY}
     container_name: koin-web
     restart: unless-stopped
+    volumes:
+      # Built APKs live outside the git-synced app tree so a normal
+      # deploy (which mirrors the repo with --delete) never touches
+      # them. Serving the physical file needs no nginx config beyond
+      # what's already there: `try_files $uri ...` under `location /`
+      # serves a real file before falling back to the SPA shell.
+      - /home/sergio/downloads/koin:/usr/share/nginx/html/download:ro
     networks:
       - web
     labels:

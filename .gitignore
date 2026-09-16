@@ -22,7 +22,6 @@ android/
 
 # Expo EAS
 .easignore
-eas.json
 
 # TypeScript
 *.tsbuildinfo
