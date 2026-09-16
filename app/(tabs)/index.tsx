@@ -2,6 +2,7 @@ import { obtenerPresupuestosExcedidos, obtenerResumenMes } from "@/db/database";
 import type { PresupuestoConGasto } from "@/types/models";
 import { useAppColors } from "@/hooks/useAppColors";
 import { formatCurrency, formatSaldo } from "@/lib/format";
+import { setFiltroTransaccionesPendiente } from "@/lib/filtroTransacciones";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -101,7 +102,10 @@ export default function ResumenScreen() {
       <View style={styles.row}>
         <TouchableOpacity
           style={[styles.miniCard, { backgroundColor: colors.ingreso.bg, flex: 1 }]}
-          onPress={() => router.push({ pathname: "/(tabs)/transacciones", params: { tipo: "ingreso" } })}
+          onPress={() => {
+            setFiltroTransaccionesPendiente("ingreso");
+            router.push("/(tabs)/transacciones");
+          }}
           activeOpacity={0.8}
         >
           <Text style={styles.miniEmoji}>📈</Text>
@@ -115,7 +119,10 @@ export default function ResumenScreen() {
 
         <TouchableOpacity
           style={[styles.miniCard, { backgroundColor: colors.gasto.bg, flex: 1 }]}
-          onPress={() => router.push({ pathname: "/(tabs)/transacciones", params: { tipo: "gasto" } })}
+          onPress={() => {
+            setFiltroTransaccionesPendiente("gasto");
+            router.push("/(tabs)/transacciones");
+          }}
           activeOpacity={0.8}
         >
           <Text style={styles.miniEmoji}>📉</Text>

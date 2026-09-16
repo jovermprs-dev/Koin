@@ -5,17 +5,13 @@ import {
   obtenerTransaccionPorId,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
+import { consumirEdicionPendiente } from "@/lib/edicionPendiente";
 import { parseImporte } from "@/lib/format";
 import { alertOk } from "@/lib/platformAlert";
 import { sincronizar } from "@/lib/sync";
 import type { AgregarForm, AgregarFormErrors } from "@/types/ui";
-import {
-  useFocusEffect,
-  useLocalSearchParams,
-  useNavigation,
-  useRouter,
-} from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -28,10 +24,10 @@ import {
 export default function AgregarScreen() {
   const colors = useAppColors();
   const router = useRouter();
-
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  let isEditing = !!id;
   const navigation = useNavigation();
+
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const isEditing = editandoId !== null;
 
   const [form, setForm] = useState<AgregarForm>({
     importe: "",
@@ -42,38 +38,33 @@ export default function AgregarScreen() {
   const [fechaOriginal, setFechaOriginal] = useState<string | null>(null);
   const [errors, setErrors] = useState<AgregarFormErrors>({});
 
-  useEffect(() => {
-    if (!id) return;
-    const transaccion = obtenerTransaccionPorId(Number(id));
-    if (!transaccion) return;
-    setForm({
-      importe: transaccion.importe.toString(),
-      tipo: transaccion.tipo,
-      categoria: transaccion.categoria,
-      concepto: transaccion.concepto ?? "",
-    });
-    setFechaOriginal(transaccion.fecha);
-  }, [id]);
-
   useFocusEffect(
     useCallback(() => {
-      navigation.setOptions({
-        title: isEditing ? "Editar" : "Agregar",
-      });
+      const pendiente = consumirEdicionPendiente();
+      setEditandoId(pendiente);
+      navigation.setOptions({ title: pendiente !== null ? "Editar" : "Agregar" });
 
-      if (!isEditing) {
+      if (pendiente !== null) {
+        const transaccion = obtenerTransaccionPorId(pendiente);
+        if (transaccion) {
+          setForm({
+            importe: transaccion.importe.toString(),
+            tipo: transaccion.tipo,
+            categoria: transaccion.categoria,
+            concepto: transaccion.concepto ?? "",
+          });
+          setFechaOriginal(transaccion.fecha);
+        }
+      } else {
         setForm({ importe: "", tipo: "gasto", categoria: "", concepto: "" });
         setFechaOriginal(null);
-        setErrors({});
       }
+      setErrors({});
 
       return () => {
-        router.setParams({ id: "" });
-        navigation.setOptions({
-          title: "Agregar",
-        });
+        navigation.setOptions({ title: "Agregar" });
       };
-    }, [isEditing]),
+    }, []),
   );
 
   const update = <K extends keyof AgregarForm>(
@@ -107,9 +98,9 @@ export default function AgregarScreen() {
 
     const concepto = form.concepto === "" ? null : form.concepto;
 
-    if (isEditing) {
+    if (isEditing && editandoId !== null) {
       actualizarTransaccion(
-        Number(id),
+        editandoId,
         form.tipo,
         form.categoria,
         parseImporte(form.importe),

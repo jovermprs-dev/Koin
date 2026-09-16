@@ -1,5 +1,5 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Tabs, usePathname, useRouter } from "expo-router";
+import { Tabs } from "expo-router";
 import React from "react";
 import { TouchableOpacity } from "react-native";
 
@@ -18,8 +18,6 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const router = useRouter();
-  const pathname = usePathname();
 
   return (
     <Tabs
@@ -68,14 +66,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="plus-circle" color={color} />
           ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            if (pathname !== "/agregar") {
-              router.navigate("/agregar");
-            }
-          },
         }}
       />
       <Tabs.Screen

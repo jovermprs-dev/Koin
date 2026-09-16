@@ -4,11 +4,13 @@ import {
   obtenerTransacciones,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
-import { formatImporte } from "@/lib/format";
+import { consumirFiltroTransaccionesPendiente } from "@/lib/filtroTransacciones";
+import { setEdicionPendiente } from "@/lib/edicionPendiente";
+import { formatFecha, formatImporte } from "@/lib/format";
 import { eliminarTransaccionRemota } from "@/lib/sync";
-import type { Transaccion } from "@/types/models";
+import type { Transaccion, TipoTransaccion } from "@/types/models";
 import type { FilaTransaccionProps } from "@/types/ui";
-import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
@@ -73,13 +75,6 @@ function FilaTransaccion({
 
   const c = item.tipo === "gasto" ? colors.gasto : colors.ingreso;
 
-  const formatFecha = (fecha: string) =>
-    new Date(fecha).toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-
   return (
     <ReanimatedSwipeable
       ref={swipeRef}
@@ -130,7 +125,7 @@ export default function TransaccionesScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const colors = useAppColors();
-  const { tipo: tipoParam } = useLocalSearchParams<{ tipo?: "gasto" | "ingreso" }>();
+  const [filtro, setFiltro] = useState<TipoTransaccion | null>(null);
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const swipeableRefs = useRef<Map<number, SwipeableMethods>>(new Map());
 
@@ -148,17 +143,18 @@ export default function TransaccionesScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      const pendiente = consumirFiltroTransaccionesPendiente();
+      setFiltro(pendiente);
       navigation.setOptions({
-        title: tipoParam === "gasto" ? "Gastos" : tipoParam === "ingreso" ? "Ingresos" : "Transacciones",
+        title: pendiente === "gasto" ? "Gastos" : pendiente === "ingreso" ? "Ingresos" : "Transacciones",
       });
       setTransacciones(obtenerTransacciones());
       closeAll();
 
       return () => {
-        router.setParams({ tipo: undefined });
         navigation.setOptions({ title: "Transacciones" });
       };
-    }, [tipoParam]),
+    }, []),
   );
 
   const handleEliminar = useCallback((id: number) => {
@@ -176,11 +172,12 @@ export default function TransaccionesScreen() {
   }, []);
 
   const handleEditar = useCallback((id: number) => {
-    router.push(`/agregar?id=${id}`);
+    setEdicionPendiente(id);
+    router.push("/agregar");
   }, []);
 
-  const transaccionesFiltradas = tipoParam
-    ? transacciones.filter((t) => t.tipo === tipoParam)
+  const transaccionesFiltradas = filtro
+    ? transacciones.filter((t) => t.tipo === filtro)
     : transacciones;
 
   const renderItem = ({ item }: { item: Transaccion }) => (
