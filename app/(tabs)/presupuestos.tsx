@@ -7,6 +7,7 @@ import {
   obtenerPresupuestosConGasto,
   obtenerRemoteIdPresupuesto,
   guardarPresupuesto,
+  subscribe,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
 import type { PresupuestoConGasto } from "@/types/models";
@@ -175,6 +176,11 @@ export default function PresupuestosScreen() {
       swipeableRefs.current.forEach((ref) => ref.close());
     }, []),
   );
+
+  // On web, focus doesn't reliably fire on every tab press — this keeps
+  // the list accurate immediately after a save, regardless of navigation
+  // timing.
+  useEffect(() => subscribe(cargar), [cargar]);
 
   // ── Animación del formulario ────────────────────────────────────────────────
 
@@ -370,7 +376,9 @@ export default function PresupuestosScreen() {
                 />
               </View>
               {errors.limite && (
-                <Text style={styles.errorText}>{errors.limite}</Text>
+                <Text style={[styles.errorText, { color: colors.error }]}>
+                  {errors.limite}
+                </Text>
               )}
             </View>
 
@@ -446,7 +454,7 @@ const styles = StyleSheet.create({
   },
   currency: { fontSize: 16, marginRight: 6 },
   importeInput: { flex: 1, fontSize: 20, fontWeight: "600", paddingVertical: 10 },
-  errorText: { color: "#e53e3e", fontSize: 12 },
+  errorText: { fontSize: 12 },
   submitBtn: {
     paddingVertical: 14,
     borderRadius: 10,

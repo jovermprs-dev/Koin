@@ -33,6 +33,22 @@ function nextId(): number {
   return nextLocalId++;
 }
 
+// Screens don't reliably get a focus event on web every time this tab is
+// pressed again (React Navigation's web focus lifecycle doesn't fire the
+// same way for every navigation trigger), so instead of only refreshing
+// on focus, screens also subscribe here and re-render the moment the
+// cache actually changes — independent of navigation entirely.
+const listeners = new Set<() => void>();
+
+function notify(): void {
+  listeners.forEach((listener) => listener());
+}
+
+export function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 function primerDiaDelMesUTC(): string {
   const now = new Date();
   const y = now.getUTCFullYear();
@@ -76,11 +92,14 @@ export async function cargarDatosRemotos(): Promise<void> {
     categoria: row.categoria,
     limite: row.limite,
   }));
+
+  notify();
 }
 
 export function limpiarDatosLocales(): void {
   transacciones = [];
   presupuestos = [];
+  notify();
 }
 
 // ── Transacciones ────────────────────────────────────────────────────────────
@@ -93,7 +112,8 @@ export function guardarTransaccion(
   concepto: string | null,
 ): void {
   const localId = nextId();
-  transacciones.unshift({ id: localId, remoteId: "", tipo, categoria, importe, concepto, fecha });
+  transacciones = [{ id: localId, remoteId: "", tipo, categoria, importe, concepto, fecha }, ...transacciones];
+  notify();
 
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (!session?.user) return;
@@ -104,8 +124,9 @@ export function guardarTransaccion(
       .single()
       .then(({ data }) => {
         if (!data) return;
-        const item = transacciones.find((t) => t.id === localId);
-        if (item) item.remoteId = data.id;
+        transacciones = transacciones.map((t) =>
+          t.id === localId ? { ...t, remoteId: data.id } : t,
+        );
       });
   });
 }
@@ -117,6 +138,7 @@ export function obtenerTransacciones(): Transaccion[] {
 export function eliminarTransaccion(id: number): void {
   const item = transacciones.find((t) => t.id === id);
   transacciones = transacciones.filter((t) => t.id !== id);
+  notify();
   if (item?.remoteId) {
     supabase.from("transacciones").delete().eq("id", item.remoteId);
   }
@@ -137,7 +159,10 @@ export function actualizarTransaccion(
   const item = transacciones.find((t) => t.id === id);
   if (!item) return;
 
-  Object.assign(item, { tipo, categoria, importe, fecha, concepto });
+  transacciones = transacciones.map((t) =>
+    t.id === id ? { ...t, tipo, categoria, importe, fecha, concepto } : t,
+  );
+  notify();
 
   if (item.remoteId) {
     supabase
@@ -163,7 +188,8 @@ export function guardarPresupuesto(categoria: string, limite: number): void {
   }
 
   const localId = nextId();
-  presupuestos.push({ id: localId, remoteId: "", categoria: categoriaTrim, limite });
+  presupuestos = [...presupuestos, { id: localId, remoteId: "", categoria: categoriaTrim, limite }];
+  notify();
 
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (!session?.user) return;
@@ -177,8 +203,9 @@ export function guardarPresupuesto(categoria: string, limite: number): void {
       .single()
       .then(({ data }) => {
         if (!data) return;
-        const item = presupuestos.find((p) => p.id === localId);
-        if (item) item.remoteId = data.id;
+        presupuestos = presupuestos.map((p) =>
+          p.id === localId ? { ...p, remoteId: data.id } : p,
+        );
       });
   });
 }
@@ -188,7 +215,10 @@ export function actualizarPresupuesto(id: number, categoria: string, limite: num
   if (!item) return;
 
   const categoriaTrim = categoria.trim();
-  Object.assign(item, { categoria: categoriaTrim, limite });
+  presupuestos = presupuestos.map((p) =>
+    p.id === id ? { ...p, categoria: categoriaTrim, limite } : p,
+  );
+  notify();
 
   if (item.remoteId) {
     supabase.from("presupuestos").update({ categoria: categoriaTrim, limite }).eq("id", item.remoteId);
@@ -198,6 +228,7 @@ export function actualizarPresupuesto(id: number, categoria: string, limite: num
 export function eliminarPresupuesto(id: number): void {
   const item = presupuestos.find((p) => p.id === id);
   presupuestos = presupuestos.filter((p) => p.id !== id);
+  notify();
   if (item?.remoteId) {
     supabase.from("presupuestos").delete().eq("id", item.remoteId);
   }

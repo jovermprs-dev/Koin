@@ -1,10 +1,10 @@
-import { obtenerPresupuestosExcedidos, obtenerResumenMes } from "@/db/database";
+import { obtenerPresupuestosExcedidos, obtenerResumenMes, subscribe } from "@/db/database";
 import type { PresupuestoConGasto } from "@/types/models";
 import { useAppColors } from "@/hooks/useAppColors";
 import { formatCurrency, formatSaldo } from "@/lib/format";
 import { setFiltroTransaccionesPendiente } from "@/lib/filtroTransacciones";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -22,13 +22,18 @@ export default function ResumenScreen() {
   const [presupuestosExcedidos, setPresupuestosExcedidos] = useState<PresupuestoConGasto[]>([]);
   const saldo = ingresos - gastos;
 
-  useFocusEffect(
-    useCallback(() => {
-      setIngresos(obtenerResumenMes("ingreso"));
-      setGastos(obtenerResumenMes("gasto"));
-      setPresupuestosExcedidos(obtenerPresupuestosExcedidos());
-    }, []),
-  );
+  const refrescar = useCallback(() => {
+    setIngresos(obtenerResumenMes("ingreso"));
+    setGastos(obtenerResumenMes("gasto"));
+    setPresupuestosExcedidos(obtenerPresupuestosExcedidos());
+  }, []);
+
+  useFocusEffect(refrescar);
+
+  // On web, focus doesn't reliably fire on every tab press — this keeps
+  // Resumen accurate immediately whenever a save happens anywhere,
+  // regardless of navigation timing.
+  useEffect(() => subscribe(refrescar), [refrescar]);
 
   const now = new Date();
   const mes = now.toLocaleDateString("es-ES", {

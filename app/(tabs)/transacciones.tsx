@@ -2,6 +2,7 @@ import {
   eliminarTransaccion,
   obtenerRemoteIdTransaccion,
   obtenerTransacciones,
+  subscribe,
 } from "@/db/database";
 import { useAppColors } from "@/hooks/useAppColors";
 import { consumirFiltroTransaccionesPendiente } from "@/lib/filtroTransacciones";
@@ -156,6 +157,12 @@ export default function TransaccionesScreen() {
       };
     }, []),
   );
+
+  // On web, focus doesn't reliably fire on every tab press — this keeps
+  // the list accurate immediately after a save, regardless of navigation
+  // timing. Only re-reads the list; the pending-filter hand-off is only
+  // ever consumed on an actual focus, above.
+  useEffect(() => subscribe(() => setTransacciones(obtenerTransacciones())), []);
 
   const handleEliminar = useCallback((id: number) => {
     const remoteId = obtenerRemoteIdTransaccion(id);

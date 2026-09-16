@@ -5,6 +5,14 @@ export type { GastoCategoria, Presupuesto, PresupuestoConGasto, ResumenMes, Tran
 
 const db = SQLite.openDatabaseSync("koinDB");
 
+// No-op on native — useFocusEffect's focus lifecycle is reliable there,
+// so screens don't need this. Exists here too so shared screen code can
+// import it from "@/db/database" on both platforms; db/database.web.ts
+// has the real implementation.
+export function subscribe(_listener: () => void): () => void {
+  return () => {};
+}
+
 export function inicializarDB() {
   db.execSync(`
     CREATE TABLE IF NOT EXISTS transacciones (

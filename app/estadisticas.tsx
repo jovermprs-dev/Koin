@@ -1,11 +1,12 @@
 import {
   obtenerGastosPorCategoria,
   obtenerResumenUltimosMeses,
+  subscribe,
 } from "@/db/database";
 import type { GastoCategoria, ResumenMes } from "@/types/models";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 
@@ -43,12 +44,17 @@ export default function EstadisticasScreen() {
   const [gastosCat, setGastosCat] = useState<GastoCategoria[]>([]);
   const [resumenMeses, setResumenMeses] = useState<ResumenMes[]>([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setGastosCat(obtenerGastosPorCategoria());
-      setResumenMeses(obtenerResumenUltimosMeses(6));
-    }, []),
-  );
+  const refrescar = useCallback(() => {
+    setGastosCat(obtenerGastosPorCategoria());
+    setResumenMeses(obtenerResumenUltimosMeses(6));
+  }, []);
+
+  useFocusEffect(refrescar);
+
+  // On web, focus doesn't reliably fire on every tab press — this keeps
+  // the charts accurate immediately after a save, regardless of
+  // navigation timing.
+  useEffect(() => subscribe(refrescar), [refrescar]);
 
   // ── Datos para el gráfico de categorías ──────────────────────────────────
 
