@@ -30,7 +30,6 @@ Personal finance tracker built with React Native & Expo. Track your income and e
 | Language | TypeScript |
 | Local database | expo-sqlite |
 | Backend & auth | Supabase |
-| State management | Zustand |
 | Charts | Gifted Charts |
 | Animations | React Native Reanimated |
 
