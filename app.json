@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "dev.sergiojover.koin",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -36,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "31ae6e56-1fe2-4662-a3db-1fa43c3d848f"
+      }
+    },
+    "owner": "jovermprs-dev"
   }
 }
