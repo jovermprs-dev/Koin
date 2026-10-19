@@ -12,10 +12,13 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 
+import DemoBanner from "@/components/DemoBanner";
 import { useColorScheme } from "@/components/useColorScheme";
 import { inicializarDB, limpiarDatosLocales, migrarDB } from "@/db/database";
+import { DEMO } from "@/lib/demo";
 import { supabase } from "@/lib/supabase";
 import { resetSincronizacion, sincronizar } from "@/lib/sync";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export { ErrorBoundary } from "expo-router";
@@ -55,10 +58,18 @@ function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
 
-  const [session, setSession] = useState<Session | null>(null);
+  // Public demo: there is no login, the app behaves as if it were always signed in (the session is never read).
+  const [session, setSession] = useState<Session | null>(DEMO ? ({} as Session) : null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
+    if (DEMO) {
+      sincronizar()
+        .catch(console.warn)
+        .finally(() => setLoadingAuth(false));
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session) await sincronizar().catch(console.warn);
@@ -112,18 +123,21 @@ function RootLayoutNav() {
   }, [session, segments, loadingAuth]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="estadisticas"
-            options={{ title: "Estadísticas", headerBackTitle: "Resumen" }}
-          />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <View style={{ flex: 1 }}>
+      {DEMO && <DemoBanner />}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="estadisticas"
+              options={{ title: "Estadísticas", headerBackTitle: "Resumen" }}
+            />
+            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          </Stack>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </View>
   );
 }

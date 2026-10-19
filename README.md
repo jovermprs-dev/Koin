@@ -70,6 +70,20 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ---
 
+### Demo mode (no backend)
+
+Set `EXPO_PUBLIC_DEMO=true` to build a public demo of the web app: no login, no Supabase client and no network
+requests. It loads six months of fictional transactions and budgets (`lib/demoData.ts`) into the in-memory cache the
+web build already uses. Visitors can add or delete entries to try the app, but every change only lives in their
+browser's memory and is gone on reload, so there is no database to keep alive or attack. The Supabase variables are not
+needed (and are deliberately never baked into a demo bundle). Off by default; the Android app is unaffected.
+
+```bash
+EXPO_PUBLIC_DEMO=true npx expo export --platform web   # or: EXPO_PUBLIC_DEMO=true docker compose up -d --build
+```
+
+---
+
 ## Project structure
 
 ```

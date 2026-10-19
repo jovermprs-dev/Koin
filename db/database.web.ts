@@ -3,6 +3,8 @@
 // file), so Supabase is the only source of truth: this module keeps an
 // in-memory cache synced from Supabase and exposes the exact same
 // synchronous API as db/database.ts, so no screen needs to change.
+import { DEMO } from "@/lib/demo";
+import { crearDatosDemo } from "@/lib/demoData";
 import { supabase } from "@/lib/supabase";
 import type {
   GastoCategoria,
@@ -68,6 +70,16 @@ export function migrarDB(): void {}
 // ── Remote sync ─────────────────────────────────────────────────────────────
 
 export async function cargarDatosRemotos(): Promise<void> {
+  if (DEMO) {
+    // Public demo: fictional data, no remote at all. Rows get an empty remoteId, so every "sync to Supabase" branch
+    // below is skipped for them.
+    const demo = crearDatosDemo();
+    transacciones = demo.transacciones.map((row) => ({ ...row, id: nextId(), remoteId: "" }));
+    presupuestos = demo.presupuestos.map((row) => ({ ...row, id: nextId(), remoteId: "" }));
+    notify();
+    return;
+  }
+
   const [{ data: t }, { data: p }] = await Promise.all([
     supabase
       .from("transacciones")
@@ -114,6 +126,7 @@ export function guardarTransaccion(
   const localId = nextId();
   transacciones = [{ id: localId, remoteId: "", tipo, categoria, importe, concepto, fecha }, ...transacciones];
   notify();
+  if (DEMO) return; // demo: the change only lives in memory
 
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (!session?.user) return;
@@ -190,6 +203,7 @@ export function guardarPresupuesto(categoria: string, limite: number): void {
   const localId = nextId();
   presupuestos = [...presupuestos, { id: localId, remoteId: "", categoria: categoriaTrim, limite }];
   notify();
+  if (DEMO) return; // demo: the change only lives in memory
 
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (!session?.user) return;

@@ -20,3 +20,11 @@ export function formatImporte(value: number, tipo: "gasto" | "ingreso"): string 
 export function parseImporte(raw: string): number {
   return Number(raw.replace(",", "."));
 }
+
+export function formatFecha(fecha: string): string {
+  return new Date(fecha).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}

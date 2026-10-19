@@ -3,8 +3,10 @@ services:
     build:
       context: .
       args:
-        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
-        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY}
+        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:-}
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}
+        # true = public demo build (no backend, fictional data). Needs no Supabase variables at all.
+        EXPO_PUBLIC_DEMO: ${EXPO_PUBLIC_DEMO:-false}
     container_name: koin-web
     restart: unless-stopped
     volumes:

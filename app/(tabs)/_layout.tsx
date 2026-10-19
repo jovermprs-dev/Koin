@@ -6,6 +6,7 @@ import { TouchableOpacity } from "react-native";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import { useColorScheme } from "@/components/useColorScheme";
 import Colors from "@/constants/Colors";
+import { DEMO } from "@/lib/demo";
 import { confirmDestructive } from "@/lib/platformAlert";
 import { supabase } from "@/lib/supabase";
 
@@ -31,7 +32,8 @@ export default function TabLayout() {
         options={{
           title: "Resumen",
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          headerRight: () => (
+          // No account in the public demo, so no sign-out button.
+          headerRight: DEMO ? undefined : () => (
             <TouchableOpacity
               onPress={() =>
                 confirmDestructive(

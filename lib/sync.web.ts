@@ -8,13 +8,16 @@
 // it's racing against has committed, wiping the just-saved item back out
 // of the cache. So this only does the real load once per session.
 import { cargarDatosRemotos } from "@/db/database";
+import { DEMO } from "@/lib/demo";
 import { supabase } from "@/lib/supabase";
 
 export async function eliminarTransaccionRemota(remoteId: string): Promise<void> {
+  if (DEMO) return;
   await supabase.from("transacciones").delete().eq("id", remoteId);
 }
 
 export async function eliminarPresupuestoRemoto(remoteId: string): Promise<void> {
+  if (DEMO) return;
   await supabase.from("presupuestos").delete().eq("id", remoteId);
 }
 
